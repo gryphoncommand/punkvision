@@ -1,4 +1,3 @@
-import threading
 
 import time
 import sys
@@ -10,7 +9,7 @@ from SocketServer import ThreadingMixIn
 
 import cv2
 
-imgdraw = None
+pipe = None
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 	"""Handle requests in a separate thread."""
@@ -19,13 +18,13 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 class StreamHandle(BaseHTTPRequestHandler):		
 
 	def do_GET(self):
-		global imgdraw	
+		global pipe
 		self.send_response(200)
 		self.send_header('Content-type','multipart/x-mixed-replace; boundary=--jpgboundary')
 		self.end_headers()
 		while True:
 			try:
-				im = cv2.cvtColor(imgdraw.getImage(), cv2.COLOR_HLS2BGR)
+				im = pipe.image()
 				cv2s = cv2.imencode('.jpg', im)[1].tostring()
 
 				self.wfile.write("--jpgboundary")
@@ -33,7 +32,7 @@ class StreamHandle(BaseHTTPRequestHandler):
 				self.send_header('Content-length', str(len(cv2s)))
 				self.end_headers()
 				self.wfile.write(cv2s)
-				time.sleep(1.0 / imgdraw.args.fps)
+				time.sleep(1.0 / pipe.args.fps)
 			except KeyboardInterrupt:
 				break
 		return
