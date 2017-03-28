@@ -6,4 +6,6 @@ if [ "$UID" -ne "0" ]; then
     exit $?
 fi
 
-apt install libopencv-dev python-opencv v4l-utils
+apt install libopencv-dev python-opencv v4l-utils python-pip
+
+pip install --upgrade pynetworktables
