@@ -47,7 +47,10 @@ class Pt():
 		if isinstance(v, Pt):
 			return Pt([self.v[i] / v.v[i] for i in range(0, min(len(self.v), len(v.v)))])
 		elif isinstance(v, int) or isinstance(v, float):
-			return Pt([self.v[i] / v for i in range(0, len(self.v))])
+			if v == 0:
+				return Pt([0 for i in range(0, len(self.v))])
+			else:
+				return Pt([self.v[i] / v for i in range(0, len(self.v))])
 		else:
 			return Pt([self.v[i] * v[i] for i in range(0, min(len(self.v), len(v)))])
 

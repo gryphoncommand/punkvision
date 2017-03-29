@@ -9,6 +9,7 @@ import numpy
 import pmath
 
 import imagestream
+import glob
 
 
 class ImagePipe():
@@ -60,6 +61,7 @@ class ImagePipe():
 			time.sleep(.125)
 
 		elif args.source is not None:
+			self.__input_files = glob.glob(self.args.source)
 			self.inputType = "dir"
 		
 		self.__has_printed = {
@@ -73,6 +75,7 @@ class ImagePipe():
 				os.makedirs(mkd)
 
 		if args.stream is not None:
+			imagestream.pipe = self
 			self.stream = imagestream.ThreadedHTTPServer(('0.0.0.0', self.args.stream), imagestream.StreamHandle)
 			pthread = threading.Thread(target=self.stream.serve_forever)
 			pthread.start()
@@ -80,7 +83,7 @@ class ImagePipe():
 
 	def start(self):
 		for thread in self.threads:
-			thread.start()
+			self.threads[thread].start()
 
 	def __thread_input(self):
 		stime, etime = (0, 0)
@@ -97,7 +100,7 @@ class ImagePipe():
 			except:
 				pass
 
-	def __thread_output():
+	def __thread_output(self):
 		stime, etime = (0, 0)
 		dtime  = 0
 		while True:
@@ -105,8 +108,6 @@ class ImagePipe():
 				stime = time.time()
 				if not self.args.save in (False, None):
 					self.__save_im()
-				if not self.args.stream in (False, None):
-					imagestream.im = self.im["output"]
 				etime = time.time()
 				self.fps["output"] = 1.0 / (etime - stime)
 				dtime = (1.0 / self.args.fps) - (etime - stime)
@@ -142,7 +143,10 @@ class ImagePipe():
 		if self.inputType == "cam":
 			retval, self.im["input"] = self.__camera.read()
 		elif self.inputType == "dir":
-			self.im["input"] = cv2.imread(self.args.source.format(self.__get_num))
+			if self.__get_num < len(self.__input_files):
+				self.im["input"] = cv2.imread(self.__input_files[self.__get_num])
+			else:
+				self.__print_once("input", "input ran out")
 			self.__get_num += 1
 
 	def __fitness_contours(self, contours):
@@ -251,11 +255,12 @@ class ImagePipe():
 		if best_fitness != None:
 			centers = [pmath.Pt(c) for c in contours]
 			areas = [cv2.contourArea(c) for c in  contours]
+
 			center = pmath.Pt((0, 0))
 			for _cen in centers:
 				center += _cen
 			center = center / float(len(centers))
-
+			#print "asdfasdf"
 			if not self.args.D["contour"] in (False, None):
 				for i in range(0, len(contours)):
 					cv2.drawContours(im, contours, i, self.args.D["contour"], self.args.D["contour-thickness"])
@@ -269,7 +274,9 @@ class ImagePipe():
 				offY = pmath.Pt((0, retsize))
 				cv2.line(im, (center - offX).std(), (center + offX).std(), retcol, retthickness)
 				cv2.line(im, (center - offY).std(), (center + offY).std(), retcol, retthickness)
+
 		im = cv2.cvtColor(im, cv2.COLOR_HLS2BGR)
+
 
 		self.im["output"] = im
 

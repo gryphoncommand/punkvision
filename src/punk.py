@@ -17,19 +17,21 @@ def rgb(r, g, b):
 	bs = b / 255.0
 	minrgb = min([rs, gs, bs])
 	maxrgb = max([rs, gs, bs])
-	C = maxrgb - minrgb
-	if maxrgb == rs:
-		H = (bs - gs) / C
-	elif maxrgb == bs:
-		H = 2 + (gs - rs) / C
-	elif maxrgb == gs:
-		H = 4 + (rs - bs) / C
 	L = (minrgb + maxrgb) / 2.0
-	if L == 1.0 or L == 1:
-		S = 0
+	if L < 0.5:
+		S = (maxrgb - minrgb) / (maxrgb + minrgb)
 	else:
-		S = C / (1 - abs(2 * L - 1))
-	H = H * 60
+		S = (maxrgb - minrgb) / (2 - (maxrgb + minrgb))
+	C = (maxrgb - minrgb)
+	if maxrgb == rs:
+		H = 60 * (gs - bs) / C
+	elif maxrgb == gs:
+		H = 120 + 60 * (bs - rs) / C
+	elif maxrgb == bs:
+		H = 240 + 60 * (rs - gs) / C
+	if H < 0:
+		H = H + 360
+	H = H / 2.0
 	S = S * 255
 	L = L * 255
 	return hsl(H, S, L)
@@ -105,7 +107,7 @@ if not isinstance(args.filter, dict):
 	fit_dict = {}
 	for v in args.filter:
 		vals = v.split(":")
-		fit_dict[vals[0]] = eval("lambda {0}: {1}".format(vals))
+		fit_dict[vals[0]] = eval("lambda {0}: {1}".format(*vals))
 	args.filter = fit_dict
 
 
@@ -128,9 +130,9 @@ for k in default_vals:
 if args.publish:
     NetworkTables.initialize(server=args.publish)
 
- imageHandle(pipe):
+def imageHandle(pipe):
 	if pipe.args.show:
-		cv2.imshow("img", pipe.im["final"])
+		cv2.imshow("img", pipe.im["output"])
 		k = cv2.waitKey(1)
 
 	if pipe.args.publish:

@@ -9,7 +9,7 @@ from SocketServer import ThreadingMixIn
 
 import cv2
 
-im = None
+pipe = None
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 	"""Handle requests in a separate thread."""
@@ -18,14 +18,14 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 class StreamHandle(BaseHTTPRequestHandler):		
 
 	def do_GET(self):
+		global pipe
 		self.send_response(200)
 		self.send_header('Content-type','multipart/x-mixed-replace; boundary=--jpgboundary')
 		self.end_headers()
 		while True:
 			# MAKE sure this refreshes the image every time
 			try:
-				global im
-				cv2s = cv2.imencode('.jpg', im)[1].tostring()
+				cv2s = cv2.imencode('.jpg', pipe.im["output"])[1].tostring()
 
 				self.wfile.write("--jpgboundary")
 				self.send_header('Content-type','image/jpeg')
