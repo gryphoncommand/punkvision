@@ -46,6 +46,7 @@ default_filters = {
 
 default_vals = {
 	"reg": False,
+	"draw": True,
 
 	"contour": rgb(120,60,20),
 	"contour-thickness": 2,
@@ -59,7 +60,7 @@ parser = argparse.ArgumentParser(description='PunkVision', formatter_class=lambd
 
 parser.add_argument('--source', '--input', default=None, help='source/input (/dev/videoX or dir/{0}.png)')
 parser.add_argument('--save', '--output', type=str, default=None, help='saves the process input (dir/{0}.png)')
-parser.add_argument('--save-every', '--output-every', type=int, default=2, help='save every X frames (useful for small disk sizes)')
+parser.add_argument('--save-every', '--output-every', type=int, default=1, help='save every X frames (useful for small disk sizes)')
 
 
 parser.add_argument('--show', action='store_true', help='show image in a window')
@@ -77,9 +78,10 @@ parser.add_argument('-H', type=int, nargs=2, default=(0, 180), help='hue range')
 parser.add_argument('-S', type=int, nargs=2, default=(0, 255), help='saturation range')
 parser.add_argument('-L', type=int, nargs=2, default=(0, 255), help='luminance range')
 
-parser.add_argument('-blur', type=int, nargs=2, default=(0, 0), help='blur size')
-parser.add_argument('-exposure', type=float, default=0, help='exposure value')
-parser.add_argument('-fps', type=float, default=10, help='frames per second from input')
+parser.add_argument('--buffer', type=int, default=None, help='blur size')
+parser.add_argument('--blur', type=int, nargs=2, default=(0, 0), help='blur size')
+parser.add_argument('-e', '--exposure', type=float, default=0, help='exposure value')
+parser.add_argument('--fps', type=float, default=None, help='frames per second from input')
 
 parser.add_argument('--fit', type=str, nargs='+', default=(), help='fitness switches ( dx:400 )')
 parser.add_argument('--filter', type=str, nargs='*', default=(), help='filter values ( area:x>40 )')

@@ -95,12 +95,14 @@ class ImagePipe():
 				etime = time.time()
 				self.fps["input"] = 1.0 / (etime - stime)
 				dtime = (1.0 / self.args.fps) - (etime - stime)
-				if dtime > 0:
+				if dtime > 0 and self.args.fps != None and self.inputType != "cam":
 					time.sleep(dtime)
 			except:
 				pass
 
 	def __thread_output(self):
+		if self.args.save in (False, None):
+			return
 		stime, etime = (0, 0)
 		dtime  = 0
 		while True:
@@ -111,7 +113,7 @@ class ImagePipe():
 				etime = time.time()
 				self.fps["output"] = 1.0 / (etime - stime)
 				dtime = (1.0 / self.args.fps) - (etime - stime)
-				if dtime > 0:
+				if dtime > 0 and self.args.fps != None:
 					time.sleep(dtime)
 			except:
 				pass
@@ -128,7 +130,7 @@ class ImagePipe():
 				self.fps["proc"] = 1.0 / (etime - stime)
 				etime = time.time()
 				dtime = (1.0 / self.args.fps) - (etime - stime)
-				if dtime > 0:
+				if dtime > 0 and self.args.fps != None:
 					time.sleep(dtime)
 			except:
 				pass
@@ -215,9 +217,14 @@ class ImagePipe():
 
 	def __save_im(self):
 		if self.__total_save_num % self.args.save_every == 0:
-			cv2.imwrite(self.args.save.format(self.__save_num), self.im["output"])
+			fmt = { 
+				"num": self.__save_num, 
+				"time": int(time.time() * 1000) 
+			}
+			cv2.imwrite(self.args.save.format(**fmt), self.im["output"])
 			self.__save_num += 1
 		self.__total_save_num += 1
+		print self.__total_save_num
 
 	def process(self):
 		im = self.im["input"].copy()
@@ -261,19 +268,20 @@ class ImagePipe():
 				center += _cen
 			center = center / float(len(centers))
 			#print "asdfasdf"
-			if not self.args.D["contour"] in (False, None):
-				for i in range(0, len(contours)):
-					cv2.drawContours(im, contours, i, self.args.D["contour"], self.args.D["contour-thickness"])
-			
-			if not self.args.D["reticle"] in (False, None):
-				retcol = self.args.D["reticle"]
-				retsize = self.args.D["reticle-size"]
-				retthickness = self.args.D["reticle-thickness"]
-				cv2.circle(im, center.std(), self.args.D["reticle-size"], retcol, retthickness)
-				offX = pmath.Pt((retsize, 0))
-				offY = pmath.Pt((0, retsize))
-				cv2.line(im, (center - offX).std(), (center + offX).std(), retcol, retthickness)
-				cv2.line(im, (center - offY).std(), (center + offY).std(), retcol, retthickness)
+			if not self.args.D["draw"] in (False, None):
+				if not self.args.D["contour"] in (False, None):
+					for i in range(0, len(contours)):
+						cv2.drawContours(im, contours, i, self.args.D["contour"], self.args.D["contour-thickness"])
+				
+				if not self.args.D["reticle"] in (False, None):
+					retcol = self.args.D["reticle"]
+					retsize = self.args.D["reticle-size"]
+					retthickness = self.args.D["reticle-thickness"]
+					cv2.circle(im, center.std(), self.args.D["reticle-size"], retcol, retthickness)
+					offX = pmath.Pt((retsize, 0))
+					offY = pmath.Pt((0, retsize))
+					cv2.line(im, (center - offX).std(), (center + offX).std(), retcol, retthickness)
+					cv2.line(im, (center - offY).std(), (center + offY).std(), retcol, retthickness)
 
 		im = cv2.cvtColor(im, cv2.COLOR_HLS2BGR)
 
