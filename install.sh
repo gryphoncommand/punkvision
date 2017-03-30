@@ -6,7 +6,7 @@
 #    exit $?
 #fi
 
-MACOSWHEEL="https://pypi.python.org/packages/16/24/4c0e3d4fc0bde3d7803e6b8f8748f749f569364aa44a891fc4c71ff22b85/opencv_python-3.2.0.6-cp27-cp27m-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl"
+#MACOSWHEEL="https://pypi.python.org/packages/16/24/4c0e3d4fc0bde3d7803e6b8f8748f749f569364aa44a891fc4c71ff22b85/opencv_python-3.2.0.6-cp27-cp27m-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl"
 TOWHEEL="opencv_python-3.2.0.6-cp27-cp27m-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl"
 GETPIP="https://bootstrap.pypa.io/get-pip.py"
 
