@@ -5,7 +5,6 @@ import argparse
 
 import cv2
 import numpy
-from networktables import NetworkTables
 
 import imagepipe
 import pmath
@@ -130,6 +129,7 @@ for k in default_vals:
 		args.D[k] = default_vals[k]
 
 if args.publish:
+    from networktables import NetworkTables
     NetworkTables.initialize(server=args.publish)
 
 def imageHandle(pipe):

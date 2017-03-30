@@ -97,7 +97,8 @@ class ImagePipe():
 				dtime = (1.0 / self.args.fps) - (etime - stime)
 				if dtime > 0 and self.args.fps != None and self.inputType != "cam":
 					time.sleep(dtime)
-			except:
+			except Exception as e:
+				print(str(e))
 				pass
 
 	def __thread_output(self):
@@ -115,7 +116,8 @@ class ImagePipe():
 				dtime = (1.0 / self.args.fps) - (etime - stime)
 				if dtime > 0 and self.args.fps != None:
 					time.sleep(dtime)
-			except:
+			except Exception as e:
+				print(str(e))
 				pass
 		
 	def __thread_proc(self):
@@ -132,7 +134,8 @@ class ImagePipe():
 				dtime = (1.0 / self.args.fps) - (etime - stime)
 				if dtime > 0 and self.args.fps != None:
 					time.sleep(dtime)
-			except:
+			except Exception as e:
+				print(str(e))
 				pass
 
 
@@ -243,7 +246,12 @@ class ImagePipe():
 			im = cv2.blur(im, self.args.blur)
 		# filter images
 		cvt_im = cv2.inRange(im, (self.args.H[0], self.args.L[0], self.args.S[0]),  (self.args.H[1], self.args.L[1], self.args.S[1]))
-		raw_contours, hierarchy = cv2.findContours(cvt_im, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
+		if cv2.__version__.startswith("2"):
+			raw_contours, _ = cv2.findContours(cvt_im, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
+		elif cv2.__version__.startswith("3"):
+			_, raw_contours, _ = cv2.findContours(cvt_im, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
+		else:
+			raise Exception("Dont know the opencv version: {0}".format(cv2.__version__))
 		contours = []
 		for i in range(0, len(raw_contours)):
 			good = True
@@ -267,7 +275,6 @@ class ImagePipe():
 			for _cen in centers:
 				center += _cen
 			center = center / float(len(centers))
-			#print "asdfasdf"
 			if not self.args.D["draw"] in (False, None):
 				if not self.args.D["contour"] in (False, None):
 					for i in range(0, len(contours)):

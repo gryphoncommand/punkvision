@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import cv2.cv as cv
 import time
 import glob
 
@@ -11,11 +10,25 @@ import argparse
 parser = argparse.ArgumentParser(description='PunkVision - gethsl')
 
 parser.add_argument('--source', '--input', default=None, help='source/input (out/0.jpg)')
+#parser.add_argument('-cv', default=2, type=int, help='OpenCV version')
 parser.add_argument('--size', default=None, type=int, nargs=2, help='size of image')
 parser.add_argument('--buffer', default=10, type=int, help='destroy N images from camera')
 parser.add_argument('-e', '--exposure', default=None, type=float, help='set camera exposure to N')
 
 args = parser.parse_args()
+
+_LDOWN, _LUP = None, None
+
+if cv2.__version__[0] == "2":
+	print ("OpenCV2")
+	import cv2.cv as cv
+	_LDOWN = cv.CV_EVENT_LBUTTONDOWN
+	_LUP = cv.CV_EVENT_LBUTTONUP
+elif cv2.__version__[0] == "3":
+	print ("OpenCV3")
+	import cv2 as cv
+	_LDOWN = cv.EVENT_LBUTTONDOWN
+	_LUP = cv.EVENT_LBUTTONUP
 
 vargs = vars(args)
 for k in vargs:
@@ -46,10 +59,10 @@ def on_mouse(event, x, y, flags, params):
 	global minxy; global maxxy
 	global avgs; global mins; global maxs
 	global button_down
-	if event == cv.CV_EVENT_LBUTTONDOWN:
+	if event == _LDOWN:
 		button_down = True
 		spt = (x, y)
-	elif event == cv.CV_EVENT_LBUTTONUP:
+	elif event == _LUP:
 		button_down = False
 		ept = (x, y)
 		minxy = (min([spt[0], ept[0]]), min([spt[1], ept[1]]))
