@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 #if [ "$UID" -ne "0" ]; then
 #    printf "ERROR: must be root\n"
@@ -25,7 +25,7 @@ fi
 OS="$PLATFORM"
 
 if [ "$PLATFORM" = "linux" ]; then
-  if [ "$(cat /etc/debian-release)" != "" ]; then
+  if [ "$(cat /etc/debian_version)" != "" ]; then
     OS="debian"
   elif [ "$(cat /etc/fedora-release)" != "" ]; then
     OS="fedora"
