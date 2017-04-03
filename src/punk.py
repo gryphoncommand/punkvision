@@ -139,8 +139,10 @@ def imageHandle(pipe):
 
 	if pipe.args.publish:
 		table = NetworkTables.getTable(args.table)
-		table.putNumber("fitness", pipe.fitness)
-		table.putNumber("contours", len(pipe.contours))
+		if pipe.fitness:
+			table.putNumber("fitness", pipe.fitness)
+		if pipe.contours:
+			table.putNumber("contours", len(pipe.contours))
 
 		table.putNumber("x", pipe.center.X)
 		table.putNumber("y", pipe.center.Y)
@@ -157,7 +159,7 @@ def imageHandle(pipe):
 		table.putNumber("fps", min(pipe.fps.values()))
 		
 		# just put so we know if it is updating
-		table.putNumber("time", time.time())
+		table.putNumber("last_time", time.time())
 
 pipe = imagepipe.ImagePipe(args, imageHandle=imageHandle)
 

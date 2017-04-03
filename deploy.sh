@@ -14,6 +14,8 @@ cp -R $FROMDIR/* ./
 echo $TMPDIR
 
 rm -rf .git
+find . -name "*.png" -delete
+find . -name "*.jpg" -delete
 rm *.tar*
 
 cd ..
