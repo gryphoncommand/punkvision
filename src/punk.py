@@ -65,7 +65,7 @@ parser.add_argument('--save-every', '--output-every', type=int, default=1, help=
 parser.add_argument('--show', action='store_true', help='show image in a window')
 parser.add_argument('--stream', type=int, default=None, help='stream to 0.0.0.0:X (9602)')
 
-parser.add_argument('--publish', type=int, default=None, help='connect to NetworkTables at X (roboRIO-NNNN-frc.local)')
+parser.add_argument('--publish', type=str, default=None, help='connect to NetworkTables at X (roboRIO-NNNN-frc.local)')
 parser.add_argument('--table', type=str, default=None, help='NetworkTables table name (vision/gearpeg)')
 
 parser.add_argument('--file', '--config', default="configs/nothing.conf", help='config file')
@@ -147,14 +147,14 @@ def imageHandle(pipe):
 
 		table.putNumber("target_fps", pipe.args.fps)
 
-		for key, fps in pipe.fps:
-			table.putNumber("{0}_fps".format(key), fps)
+		for key in pipe.fps.keys():
+			table.putNumber("{0}_fps".format(key), pipe.fps[key])
 
 		table.putNumber("width", pipe.args.size[0])
 		table.putNumber("height", pipe.args.size[1])
 
 		# it is only as fast as the slowest component
-		table.putNumber("fps", min(pipe.fps.vals()))
+		table.putNumber("fps", min(pipe.fps.values()))
 		
 		# just put so we know if it is updating
 		table.putNumber("time", time.time())

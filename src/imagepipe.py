@@ -34,11 +34,11 @@ class ImagePipe():
 			"output": threading.Thread(target=self.__thread_output),
 		}
 
-		self.fps = {
+		self.fps = dict({
 			"input": -1,
 			"output": -1,
 			"proc": -1,
-		}
+		})
 
 		self.__get_num = 0
 		self.__save_num = 0
