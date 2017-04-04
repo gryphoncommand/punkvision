@@ -239,6 +239,8 @@ class ImagePipe():
 		self.__total_save_num += 1
 
 	def process(self):
+		if self.im["input"] is None:
+			return
 		im = self.im["input"].copy()
 		height, width, depth = im.shape
 		if (width, height) != self.args.size:

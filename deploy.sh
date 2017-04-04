@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 FROMDIR="$PWD"
 FOLDER="punkvision"
@@ -14,8 +14,10 @@ cp -R $FROMDIR/* ./
 echo $TMPDIR
 
 rm -rf .git
-find . -name "*.png" -delete
+
 find . -name "*.jpg" -delete
+find . -name "*.png" -delete
+
 rm *.tar*
 
 cd ..

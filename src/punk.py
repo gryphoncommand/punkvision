@@ -63,7 +63,7 @@ parser.add_argument('--save-every', '--output-every', type=int, default=1, help=
 
 
 parser.add_argument('--show', action='store_true', help='show image in a window')
-parser.add_argument('--stream', type=int, default=None, help='stream to 0.0.0.0:X (9602)')
+parser.add_argument('--stream', type=int, default=None, help='stream to 0.0.0.0:X (5802)')
 
 parser.add_argument('--publish', type=str, default=None, help='connect to NetworkTables at X (roboRIO-NNNN-frc.local)')
 parser.add_argument('--table', type=str, default=None, help='NetworkTables table name (vision/gearpeg)')
