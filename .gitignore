@@ -1,6 +1,7 @@
 *.png
 *.jpg
 *.pyc
-*.tar*
+
+*.tar.*
 .DS_Store
 
