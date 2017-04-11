@@ -35,10 +35,10 @@ TARGET="$1"
 #SOURCES=./src/
 SOURCES="$FOLDER.tar.xz"
 
-if [ "$TARGET" == "" ]; then
+if [ "$TARGET" = "" ]; then
     TARGET="pi@raspberrypi.local"
 fi
-HERECMD="scp -r $SOURCES $TARGET:~/ ${@:2}"
+HERECMD="scp -r $SOURCES $TARGET:~/ ${2} ${3} ${4}"
 EXECMD="tar xfv ~/$SOURCES"
 
 echo "Running here: $HERECMD"
