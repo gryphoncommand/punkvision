@@ -6,7 +6,7 @@ A realtime vision program for FRC teams.
 
 ### Deploying
 
-Run `./deploy.sh` to deploy to `pi@raspberrypi.local:~/` (you have to be connected to the same network).
+Run `./scripts/deploy.sh` to deploy to `pi@raspberrypi.local:~/` (you have to be connected to the same network).
 
 You'll have to enter the same password twice (for raspberrypis, the default password is `raspberry`)
 
@@ -14,7 +14,7 @@ You'll have to enter the same password twice (for raspberrypis, the default pass
 
 Now, ssh to raspberry pi `ssh pi@raspberrypi.local`.
 
-To get an autostarting program to run repeatedly, add a file `/etc/rc.local` on the coprocessor (if it doesn't exist), and make sure it is executable `chmod +x /etc/rc.local`. Then, add the following line: `sh /home/pi/punkvision/autostart.sh &`.
+To get an autostarting program to run repeatedly, add a file `/etc/rc.local` on the coprocessor (if it doesn't exist), and make sure it is executable `chmod +x /etc/rc.local`. Then, add the following line: `sh /home/pi/punkvision/scripts/autostart.sh &`.
 
 **IMPORTANT** Make sure the file ends with `exit 0`, and that there is no `exit 0` before our script execution. This will exit the script, and not execute your file! Also, make sure this doesn't hang or exit nonzero. This will mess up the boot!
 

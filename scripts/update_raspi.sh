@@ -31,17 +31,16 @@ if [ "$PLATFORM" = "linux" ]; then
   fi
 fi
 
-if [ "x$PLATFORM" != "xdebian" ]; then
+if [ "$OS" != "debian" ]; then
   echo "This is not a raspberry PI."
   uname -a
   exit 2
 fi
 
-sudo apt-get -y update
+echo "#!/bin/sh -e" > /etc/rc.local
+find $PWD/scripts -name "auto_*.sh" -exec echo {}" &" >> /etc/rc.local \;
+echo "exit 0" >> /etc/rc.local
 
-sudo apt-get -y install python-pip build-essential cmake pkg-config
+chmod +x /etc/rc.local
 
-sudo apt-get -y install libjpeg8-dev libpng12-dev libatlas-base-dev libv4l-dev libopencv-dev python-opencv
-
-pip install pynetworktables
-pip install numpy
+exit 0
