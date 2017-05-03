@@ -43,4 +43,6 @@ echo "exit 0" >> /etc/rc.local
 
 chmod +x /etc/rc.local
 
+./scripts/network_update.sh
+
 exit 0

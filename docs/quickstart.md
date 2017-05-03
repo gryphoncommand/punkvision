@@ -8,4 +8,13 @@ Now, there are a few ways to use punkvision
 
 After installation, navigate to the directory with punkvision in it.
 
-Run `python src/
+Run `python src/punk.py --help` to view help.
+
+A couple of example programs:
+
+
+To find and display green contours:
+
+`python src/punk.py --input /dev/video0 --show --config configs/find_green.conf`
+
+

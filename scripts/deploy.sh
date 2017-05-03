@@ -13,10 +13,15 @@ mkdir -p $TMPDIR/src
 mkdir -p $TMPDIR/scripts
 mkdir -p $TMPDIR/configs
 
+# copy en masse these files
 find $FROMDIR/src -name "*.py" -exec cp {} $TMPDIR/src \;
 find $FROMDIR/scripts -name "*.sh" -exec cp {} $TMPDIR/scripts \;
 find $FROMDIR/configs -name "*.conf" -exec cp {} $TMPDIR/configs \;
 
+# some additional files
+cp $FROMDIR/README.md $TMPDIR/README.md
+cp $FROMDIR/TE.AM $TMPDIR/TE.AM
+cp $FROMDIR/R.PI $TMPDIR/R.PI
 
 cd $FROMDIR
 

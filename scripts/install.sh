@@ -51,7 +51,9 @@ test_module () {
 test_module ensurepip
 
 if [ "$OS" = "debian" ]; then
-  apt install libopencv-dev python-opencv v4l-utils
+  sudo apt-get -y update
+  sudo apt-get -y install python-pip build-essential cmake pkg-config
+  sudo apt-get -y install libjpeg8-dev libpng12-dev libatlas-base-dev libv4l-dev libopencv-dev python-opencv
 elif [ "$OS" = "fedora" ]; then
   echo "fedora not tested"
   yum install python-pip
@@ -68,4 +70,5 @@ fi
 test_module networktables pynetworktables
 test_module numpy numpy
 
+exit 0
 

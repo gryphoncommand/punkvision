@@ -46,5 +46,8 @@ sudo apt-get -y install libjpeg8-dev libpng12-dev libatlas-base-dev libv4l-dev l
 pip install pynetworktables
 pip install numpy
 
+
+./scripts/network_setup.sh
+
 exit 0
 

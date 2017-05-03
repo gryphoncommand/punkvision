@@ -4,39 +4,29 @@ A realtime vision program for FRC teams.
 
 ## Installing
 
-### Deploying
+Set `./TE.AM`'s contents to your team number seperated into the middle IP notation.
 
-Run `./scripts/deploy.sh` to deploy to `pi@raspberrypi.local:~/` (you have to be connected to the same network).
+For example, if my team number was `3966`, `./TE.AM` contains `39.66`. If it were `235`, the file would contain `2.35`, etc.
 
-You'll have to enter the same password twice (for raspberrypis, the default password is `raspberry`)
+Set `./R.PI` to the last octet for the raspberry PI's static IP address. This is important to remember, as you will need to connect via a static IP on the field, because mDNS will not work (which is how you connect via `raspberrypi.local`. Don't worry, when you are off of the FMS (back at a robotics lab), you will still be able to connect via `raspberrypi.local`. So, if I want to connect to the raspberry pi at `10.39.66.176`, I would set `./TE.AM` to `39.66`, and `./R.PI` to `176`.
 
-### Autostart script
+Now, run `./scripts/deploy.sh`
 
-Now, ssh to raspberry pi `ssh pi@raspberrypi.local`.
+ssh to the raspberry pi (`ssh pi@raspberrypi.local`), then `cd ~/`, and `tar xfv ~/Downloads/punkvision.tar.xz`.
 
-To get an autostarting program to run repeatedly, add a file `/etc/rc.local` on the coprocessor (if it doesn't exist), and make sure it is executable `chmod +x /etc/rc.local`. Then, add the following line: `sh /home/pi/punkvision/scripts/autostart.sh &`.
+Now, `cd punkvision`, and `./scripts/install_raspi.sh`.
 
-**IMPORTANT** Make sure the file ends with `exit 0`, and that there is no `exit 0` before our script execution. This will exit the script, and not execute your file! Also, make sure this doesn't hang or exit nonzero. This will mess up the boot!
+Create some auto-starting files by copying `./scripts/auto_nothing` to something that starts with `auto_`. i.e. `./scripts/auto_ABC.sh`.
 
-### Configuring networking for competition
+After this, run `./scripts/update_raspi.sh`. You will need to do this each time you change networking information, or add or remove an autoscript.
 
-At the end of `/etc/dhcpcd.conf`, take the following text and replace TE.AM with your team number, and replace RPI with the last number (no .), so it may look like: `static ip_address=10.39.66.176/24`, and you can connect to the raspberry pi at `raspberrypi.local` or `10.39.66.176`.
+Now, reboot, and it should run the autostart scripts on boot!
 
-``` bash
-#... SOME RANDOM STUFF
-
-interface eth0
-
-static ip_address=10.TE.AM.RPI/24
-static routers=10.TE.AM.1
-static domain_name_servers=10.TE.AM.1
-```
 
 
 ## TODO
 
   + Use [cscore](http://robotpy.readthedocs.io/en/stable/vision/other.html) for streaming to the driver station (right now, you have to open a web browser)
-  + Add documentation, and a formal LaTeX paper
   + Provide raspi images for teams to use
   + Add Makefile to install correct packages, and detect some things (probably not enough to warrant a ./configure step)
 
@@ -45,8 +35,4 @@ static domain_name_servers=10.TE.AM.1
 
 Please report bugs to the [issues](https://github.com/LN-STEMpunks/PunkVision/issues)
 
-
-## TESTS
-
-Some could be hard to implement (because it needs to be ran live most of the time), and every camera is different.
 
