@@ -2,7 +2,7 @@
 
 First, [install](./#/installing) punkvision.
 
-Now, there are a few ways to use ezc
+Now, there are a few ways to use punkvision
 
 ## Test it on a developer machine
 
