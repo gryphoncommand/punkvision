@@ -9,42 +9,41 @@ mkdir -p $TMPDIR
 
 cd $TMPDIR
 
-echo $TMPDIR
-cp -R $FROMDIR/* ./
-echo $TMPDIR
+mkdir -p $TMPDIR/src
+mkdir -p $TMPDIR/configs
 
-rm -rf .git
+find $FROMDIR/src -name "*.py" -exec cp {} $TMPDIR/src \;
+find $FROMDIR/configs -name "*.conf" -exec cp {} $TMPDIR/configs \;
 
-find . -name "*.jpg" -delete
-find . -name "*.png" -delete
 
-rm *.tar*
-
-cd ..
-
-echo "Tarring"
-tar cfJ $FOLDER.tar.xz $FOLDER
 
 cd $FROMDIR
 
-cp $TMPDIR/../$FOLDER.tar.xz $FOLDER.tar.xz
+rm *.tar*
+echo "Tarring"
 
-TAR="$FOLDER.tar.xz"
+
+TARFILE="$FOLDER.tar.xz"
+
+tar -C $TMPDIR/.. cfJ $TARFILE $FOLDER
+
+exit
 
 TARGET="$1"
-#SOURCES=./src/
-SOURCES="$FOLDER.tar.xz"
+SOURCES="$TARFILE"
 
 if [ "$TARGET" = "" ]; then
     TARGET="pi@raspberrypi.local"
 fi
-HERECMD="scp -r $SOURCES $TARGET:~/ ${2} ${3} ${4}"
+
+HERECMD="scp -r $SOURCES $TARGET:~/Downloads ${2} ${3} ${4}"
 EXECMD="tar xfv ~/$SOURCES"
 
+
 echo "Running here: $HERECMD"
-bash -c "$HERECMD" || echo "Failed"
+bash -c "$HERECMD" || echo "Failed on HOST"
 
 echo "Running on raspi: $EXECMD"
-ssh $TARGET "$EXECMD" || echo "Failed"
+ssh $TARGET "$EXECMD" || echo "Failed on TARGET"
 
 
