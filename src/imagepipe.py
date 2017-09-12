@@ -268,7 +268,7 @@ class ImagePipe():
                     "num": self.__save_num, 
                     "time": int(time.time() * 1000) 
                 }
-                cv2.imwrite(self.args.save.format(**fmt), self.im["output"])
+                cv2.imwrite(self.args.save.format(fmt["num"], fmt["time"], **fmt), self.im["output"])
                 self.__save_num += 1
             self.__total_save_num += 1
 
