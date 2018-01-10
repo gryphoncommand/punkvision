@@ -27,8 +27,8 @@ import sys
 import os
 import argparse
 
-from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
-from SocketServer import ThreadingMixIn
+from http.server import BaseHTTPRequestHandler,HTTPServer
+from socketserver import ThreadingMixIn
 
 import cv2
 
@@ -50,12 +50,13 @@ class StreamHandle(BaseHTTPRequestHandler):
             try:
                 cv2s = cv2.imencode('.jpg', pipe.im["output"])[1].tostring()
 
-                self.wfile.write("--jpgboundary")
+                self.wfile.write("--jpgboundary".encode())
                 self.send_header('Content-type','image/jpeg')
-                self.send_header('Content-length', str(len(cv2s)))
+                self.send_header('Content-length', str(len(cv2s)).encode())
                 self.end_headers()
                 self.wfile.write(cv2s)
-                time.sleep(1.0 / pipe.args.fps)
+                if pipe.args.fps is not None:
+                    time.sleep(1.0 / pipe.args.fps)
             except KeyboardInterrupt:
                 break
         return

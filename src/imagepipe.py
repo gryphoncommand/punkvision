@@ -200,7 +200,7 @@ class ImagePipe():
 
         for i in self.args.fit.keys():
             fit += self.args.fit[i].func(self.args.size, X, Y, AREA)
-            print (fit)
+            #print (fit)
 
         """
         if "dx" in self.args.fit.keys():

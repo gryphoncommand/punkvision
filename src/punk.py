@@ -150,7 +150,9 @@ parser.add_argument('-D', '--D', type=str, nargs='*', default=(), help='config v
 
 args = parser.parse_args()
 
-execfile(args.file)
+#execfile(args.file)
+exec(open(args.file, "r").read())
+
 
 # make tuples from lists
 for v in vars(args):

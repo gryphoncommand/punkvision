@@ -157,6 +157,7 @@ def update_im():
         for i in range(0, args.buffer):
             cam.read()
 
+        print ("cam read")
         retval, img = cam.read()
     else:
         if count == 0:
@@ -166,12 +167,13 @@ def update_im():
 
 do_l = True
 while do_l:
+    print ("loop start")
     update_im()
     if args.size is not None:
         img = cv2.resize(img, tuple(args.size))
 
     cv2.namedWindow('real image')
-    cv.SetMouseCallback('real image', on_mouse, 0)
+    cv2.setMouseCallback('real image', on_mouse, 0)
     cv2.imshow('real image', img)
 
     k = cv2.waitKey(0)
