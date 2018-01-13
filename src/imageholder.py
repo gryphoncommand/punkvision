@@ -13,7 +13,7 @@ import numpy
 # this is a class to generate and hold images
 class ImageHolder:
 
-    def __init__(self, image_source, size, H, L, S, N_contours=1, exposure=None, fps_lim=None, save_input_pattern=None, save_output_pattern=None, filters={}, fitness={}, Dconfig={}, handler=None):
+    def __init__(self, image_source, size, H, L, S, N_contours=1, exposure=None, fps_lim=None, save_input_pattern=None, save_output_pattern=None, filters={}, fitness={}, Dconfig={}, handler=None, save_every=1):
         """
 
         image_source can be "/dev/video[N]" to use a camera, or a glob pattern such as "files/*.png"
@@ -24,6 +24,8 @@ class ImageHolder:
         self.save_input_pattern = save_input_pattern
         self.save_output_pattern = save_output_pattern
         self.size = size
+
+        self.save_every = save_every
 
         self.Dconfig = Dconfig
         self.filters = filters
@@ -107,7 +109,13 @@ class ImageHolder:
 
     def __update_input(self):
         if self.__camera is not None:
+            st = time.time()
             retval, self.im["input"] = self.__camera.read()
+            et = time.time()
+            dt = et - st
+            if dt > 0:
+                self.fps["camread"] = 1.0 / dt
+
             self.num_images["input"] += 1
         elif self.__images is not None:
             self.im["input"] = cv2.imread(self.__images[self.num_images["input"] % len(self.__images)])
@@ -118,8 +126,10 @@ class ImageHolder:
     def get_contours(self, im):
         cvt_im = cv2.inRange(im, (self.H[0], self.L[0], self.S[0]),  (self.H[1], self.L[1], self.S[1]))
 
+        st = time.time()
         _, raw_contours, _ = cv2.findContours(cvt_im, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
-
+        et = time.time()
+ 
         contours = []
         for i in range(0, len(raw_contours)):
             good = True
@@ -185,11 +195,14 @@ class ImageHolder:
 
         im = self.im["input"].copy()
 
+
         height, width, depth = im.shape
         if (width, height) != self.size:
             print ("Image had to be manually resized from {0} to {1}".format((width, height), self.size))
             im = cv2.resize(im, self.size, interpolation=cv2.INTER_LANCZOS4)
             height, width, depth = im.shape
+
+
 
         im = cv2.cvtColor(im, cv2.COLOR_BGR2HLS)
         if self.Dconfig["normalize"] not in (False, None):
@@ -197,12 +210,15 @@ class ImageHolder:
             avgLuminance = (oversample ** 2) * numpy.sum(im[0:height:oversample,0:width:oversample,1]) / (height * width)
             im[::1] = numpy.multiply(im[::1], 120.0 / avgLuminance)
 
+
         if self.Dconfig["blur"] is not None and 0 not in self.Dconfig["blur"]:
             im = cv2.blur(im, self.Dconfig["blur"])
 
         #print ('getting contours')
 
         contours = self.get_contours(im)
+
+
         #print ('getting best fit')
         
         best_group, best_fitness = self.get_best_fit(contours)
@@ -214,6 +230,9 @@ class ImageHolder:
             for i in range(0, len(best_group)):
                 cv2.drawContours(im, best_group, i, self.Dconfig["contour"], self.Dconfig["contour-thickness"])
 
+
+
+        # end drawing
         im = cv2.cvtColor(im, cv2.COLOR_HLS2BGR)
 
         self.best_group = best_group
@@ -221,7 +240,6 @@ class ImageHolder:
         if self.best_fitness is not None:
             best_centers = [pmath.Pt(c) for c in best_group]
             self.best_center = sum([i.v[0] for i in best_centers]) / len(best_group), sum([i.v[1] for i in best_centers]) / len(best_group)
-
         else:
             self.best_center = None
 
@@ -239,16 +257,15 @@ class ImageHolder:
 
         im = self.im["output"].copy()
 
-        if self.save_input_pattern is not None:
+        if self.save_input_pattern is not None and self.num_images["output"] % self.save_every == 0:
             file_name = self.save_input_pattern.format(num=self.num_images["output"])
             cv2.imwrite(file_name, im)
 
-        if self.save_output_pattern is not None:
-            print ('asdfasdf')
+        if self.save_output_pattern is not None and self.num_images["output"] % self.save_every == 0:
             file_name = self.save_output_pattern.format(num=self.num_images["output"])
-            print (file_name)
             cv2.imwrite(file_name, im)
-            print ('asf')
+
+        print (self.fps)
 
         self.handler(self)
 
@@ -264,9 +281,11 @@ class ImageHolder:
                         pass
                         #time.sleep(.01)
                 my_last_ran = self.last_ran
+
                 stime = time.time()
                 method()
                 etime = time.time()
+
                 dtime = etime - stime
                 if dtime == 0:
                     self.fps[name] = 1001

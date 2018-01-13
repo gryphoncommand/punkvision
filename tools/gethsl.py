@@ -138,9 +138,9 @@ def update_im():
         retval, img = cam.read()
     else:
         if count == 0:
-            args.source = list(glob.glob(args.source))
+            args.sources = list(glob.glob(args.source))
 
-        img = cv2.imread(args.source[count])
+        img = cv2.imread(args.sources[count])
 
 do_l = True
 while do_l:

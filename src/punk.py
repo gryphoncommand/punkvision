@@ -31,6 +31,7 @@ import numpy
 
 #import imagepipe
 import imageholder
+import imagestream
 import pmath
 
 # out of order color channels
@@ -129,7 +130,7 @@ parser.add_argument('--source', '--input', default="/dev/video0", help='source/i
 parser.add_argument('--save-input', type=str, default=None, help='saves the raw input (dir/{num}.png)')
 parser.add_argument('--save-output', type=str, default=None, help='saves the processed output (dir/{num}.png)')
 
-#parser.add_argument('--save-every', '--output-every', type=int, default=1, help='save every X frames (useful for small disk sizes)')
+parser.add_argument('--save-every', type=int, default=2, help='save every X frames (useful for small disk sizes)')
 
 
 parser.add_argument('--show', action='store_true', help='show image in a window')
@@ -245,9 +246,16 @@ def image_handler(holder):
         # just put so we know if it is updating
         table.putNumber("last_time", time.time())
 
-holder = imageholder.ImageHolder(args.source, args.size, args.H, args.L, args.S, args.num, args.exposure, args.fps, args.save_input, args.save_output, args.filter, args.fit, args.Dconfig, image_handler)
+holder = imageholder.ImageHolder(args.source, args.size, args.H, args.L, args.S, args.num, args.exposure, args.fps, args.save_input, args.save_output, args.filter, args.fit, args.Dconfig, image_handler, save_every=args.save_every)
+
+imagestream.holder = holder
 
 holder.start()
+
+if args.stream:
+    imstream = imagestream.ThreadedHTTPServer(('0.0.0.0', args.stream), imagestream.StreamHandle)
+    imstream.serve_forever()
+
 
 #pipe = imagepipe.ImagePipe(args, imageHandle=imageHandle)
 

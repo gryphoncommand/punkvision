@@ -32,7 +32,9 @@ from socketserver import ThreadingMixIn
 
 import cv2
 
-pipe = None
+
+holder = None
+fps = 24.0
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
@@ -41,22 +43,22 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 class StreamHandle(BaseHTTPRequestHandler):        
 
     def do_GET(self):
-        global pipe
         self.send_response(200)
         self.send_header('Content-type','multipart/x-mixed-replace; boundary=--jpgboundary')
         self.end_headers()
+        global holder
+        global fps
         while True:
             # MAKE sure this refreshes the image every time
             try:
-                cv2s = cv2.imencode('.jpg', pipe.im["output"])[1].tostring()
+                cv2s = cv2.imencode('.jpg', holder.im["output"])[1].tostring()
 
                 self.wfile.write("--jpgboundary".encode())
                 self.send_header('Content-type','image/jpeg')
                 self.send_header('Content-length', str(len(cv2s)).encode())
                 self.end_headers()
                 self.wfile.write(cv2s)
-                if pipe.args.fps is not None:
-                    time.sleep(1.0 / pipe.args.fps)
+                time.sleep(1.0 / fps)
             except KeyboardInterrupt:
                 break
         return
