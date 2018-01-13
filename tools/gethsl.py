@@ -44,10 +44,10 @@ def on_mouse(event, x, y, flags, params):
     global minxy; global maxxy
     global avgs; global mins; global maxs
     global button_down
-    if event == cv.EVENT_LBUTTONDOWN:
+    if event == cv2.EVENT_LBUTTONDOWN:
         button_down = True
         sx, sy = x, y
-    elif event == cv.EVENT_LBUTTONUP:
+    elif event == cv2.EVENT_LBUTTONUP:
         button_down = False
         ex, ey = x, y
         minxy = (min([sx, ex]), min([sy, ey]))
@@ -70,7 +70,7 @@ def on_mouse(event, x, y, flags, params):
 
     if button_down:
         dispimg = img.copy()
-        cv2.rectangle(dispimg, spt, (x, y), (0, 0, 255))
+        cv2.rectangle(dispimg, (sx, sy), (x, y), (0, 0, 255))
         cv2.imshow('real image', dispimg)
         k = cv2.waitKey(10)
 
@@ -121,17 +121,15 @@ cam = None
 
 def update_im():
     global img
-    if args.source[0].startswith("/dev/video"):
-        global cam
-        
+    global cam
+    if args.source.startswith("/dev/video"):
         if count == 0:
-            """if args.exposure is not None:
+            if args.exposure is not None:
                 cmd = "v4l2-ctl -d {0} -c exposure_auto=1 -c exposure_absolute={1}".format(args.source[0], args.exposure)
                 os.system(cmd)
                 time.sleep(.125)
-            """
 
-            cam = cv2.VideoCapture(int(args.source[0].replace('/dev/video', "")))
+            cam = cv2.VideoCapture(int(args.source.replace('/dev/video', "")))
 
         for i in range(0, args.buffer):
             cam.read()
@@ -140,7 +138,7 @@ def update_im():
         retval, img = cam.read()
     else:
         if count == 0:
-            args.source = list(glob.glob(args.source[0]))
+            args.source = list(glob.glob(args.source))
 
         img = cv2.imread(args.source[count])
 
