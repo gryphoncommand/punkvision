@@ -63,6 +63,8 @@ class ImageHolder:
             "output": None,
         }
 
+        self.last_ran = 0
+
         self.num_images = {
             "input": 0,
             "proc": 0,
@@ -110,6 +112,8 @@ class ImageHolder:
         elif self.__images is not None:
             self.im["input"] = cv2.imread(self.__images[self.num_images["input"] % len(self.__images)])
             self.num_images["input"] += 1
+            
+        self.last_ran = time.time()
 
     def get_contours(self, im):
         cvt_im = cv2.inRange(im, (self.H[0], self.L[0], self.S[0]),  (self.H[1], self.L[1], self.S[1]))
@@ -240,8 +244,11 @@ class ImageHolder:
             cv2.imwrite(file_name, im)
 
         if self.save_output_pattern is not None:
+            print ('asdfasdf')
             file_name = self.save_output_pattern.format(num=self.num_images["output"])
+            print (file_name)
             cv2.imwrite(file_name, im)
+            print ('asf')
 
         self.handler(self)
 
@@ -249,8 +256,14 @@ class ImageHolder:
 
 
     def __thread_base(self, method, name):
+        my_last_ran = 0
         while True:
             try:
+                if name != "input":
+                    while self.last_ran == my_last_ran:
+                        pass
+                        #time.sleep(.01)
+                my_last_ran = self.last_ran
                 stime = time.time()
                 method()
                 etime = time.time()
