@@ -37,17 +37,9 @@ if [ "$OS" != "debian" ]; then
   exit 2
 fi
 
-sudo apt-get -y update
+apt-get -y install python3-pip build-essential cmake pkg-config
+apt-get -y install libjpeg8-dev libpng12-dev libatlas-base-dev libv4l-dev  v4l-utils
 
-sudo apt-get -y install python-pip build-essential cmake pkg-config
+pip3 networktables pynetworktables opencv-python numpy
 
-sudo apt-get -y install libjpeg8-dev libpng12-dev libatlas-base-dev libv4l-dev libopencv-dev python-opencv
-
-pip install pynetworktables
-pip install numpy
-
-
-./scripts/network_setup.sh
-
-exit 0
 

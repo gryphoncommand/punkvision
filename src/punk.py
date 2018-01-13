@@ -29,7 +29,8 @@ import argparse
 import cv2
 import numpy
 
-import imagepipe
+#import imagepipe
+import imageholder
 import pmath
 
 # out of order color channels
@@ -64,7 +65,6 @@ def hsl(h, s, l):
     return (h, l, s)
 
 
-
 def stddev(A):
     return numpy.std(A, ddof=1)
 
@@ -72,16 +72,20 @@ def avg(A):
     return numpy.average(A)
 
 
-
 class Fit:
     def __init__(self, name, src):
+        self.name = name
+        self.src = src
+        # capital because they are arrays
         self.__func = eval("lambda imgsize, X, Y, AREA: {0}".format(src))
     
-    def func(self, imgsize, X, Y, AREA):
-        return self.__func(imgsize, X, Y, AREA)
+    def func(self, imgsize, x, y, area):
+        return self.__func(imgsize, x, y, area)
 
 class Filter:
     def __init__(self, name, src):
+        self.name = name
+        self.src = src
         self.__func = eval("lambda imgsize, x, y, area: {0}".format(src))
     
     def func(self, imgsize, x, y, area):
@@ -94,14 +98,17 @@ default_filters = {
 }
 
 default_fits = {
-#    "_low_dx": Fit("_low_dx", "abs(x1 - x0) * 10")
-#    "area": Filter("area", "area > 5")
+#    "_low_dx": Fit("_low_dx", "abs(X[1] - X[0]) * 10")
 }
 
 
 default_vals = {
-    "reg": False,
+    "normalize": False,
     "draw": True,
+
+    # can be be (x, y)
+    "blur": None,
+    
 
     "contour": rgb(120,60,20),
     "contour-thickness": 2,
@@ -119,8 +126,10 @@ default_vals = {
 parser = argparse.ArgumentParser(description='PunkVision', formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=50))
 
 parser.add_argument('--source', '--input', default="/dev/video0", help='source/input (/dev/videoX or "dir/*.png")')
-parser.add_argument('--save', '--output', type=str, default=None, help='saves the process input (dir/{num}.png)')
-parser.add_argument('--save-every', '--output-every', type=int, default=1, help='save every X frames (useful for small disk sizes)')
+parser.add_argument('--save-input', type=str, default=None, help='saves the raw input (dir/{num}.png)')
+parser.add_argument('--save-output', type=str, default=None, help='saves the processed output (dir/{num}.png)')
+
+#parser.add_argument('--save-every', '--output-every', type=int, default=1, help='save every X frames (useful for small disk sizes)')
 
 
 parser.add_argument('--show', action='store_true', help='show image in a window')
@@ -139,14 +148,17 @@ parser.add_argument('-S', type=int, nargs=2, default=(0, 255), help='saturation 
 parser.add_argument('-L', type=int, nargs=2, default=(0, 255), help='luminance range')
 
 parser.add_argument('--buffer', type=int, default=None, help='blur size')
-parser.add_argument('--blur', type=int, nargs=2, default=(0, 0), help='blur size')
-parser.add_argument('-e', '--exposure', type=float, default=0, help='exposure value')
+
+# replaced by -D blur:X,Y
+#parser.add_argument('--blur', type=int, nargs=2, default=(0, 0), help='blur size')
+
+parser.add_argument('-e', '--exposure', type=float, default=None, help='exposure value')
 parser.add_argument('--fps', type=float, default=None, help='frames per second from input')
 
 parser.add_argument('--fit', type=str, nargs='+', default=(), help='fitness switches ( "myname:sum(abs(X-avg(X)))" )')
 parser.add_argument('--filter', type=str, nargs='*', default=(), help='filter values ( "myname: x > 40" )')
 
-parser.add_argument('-D', '--D', type=str, nargs='*', default=(), help='config values ( reticle:rgb(255,0,0) )')
+parser.add_argument('-D', '--Dconfig', type=str, nargs='*', default=(), help='config values ( reticle:rgb(255,0,0) )')
 
 args = parser.parse_args()
 
@@ -180,52 +192,64 @@ for k in default_filters:
         args.filter[k] = default_filters[k]
 
 
-if not isinstance(args.D, dict):
+if not isinstance(args.Dconfig, dict):
     fit_dict = {}
-    for v in args.D:
+    for v in args.Dconfig:
         vals = v.split(":")
         fit_dict[vals[0]] = eval(vals[1])
-    args.D = fit_dict
+    args.Dconfig = fit_dict
 
 for k in default_vals:
-    if k not in args.D:
-        args.D[k] = default_vals[k]
+    if k not in args.Dconfig:
+        args.Dconfig[k] = default_vals[k]
 
 if args.publish:
     from networktables import NetworkTables
     NetworkTables.initialize(server=args.publish)
 
-def imageHandle(pipe):
-    if pipe.args.show:
-        if not pipe.im["output"] is None:
-            cv2.imshow("img", pipe.im["output"])
+def image_handler(holder):
+    if args.show:
+        if holder.im["output"] is not None:
+            cv2.imshow("img", holder.im["output"])
             k = cv2.waitKey(1)
 
-    if pipe.args.publish:
+    if args.publish:
         table = NetworkTables.getTable(args.table)
-        if pipe.fitness:
-            table.putNumber("fitness", pipe.fitness)
-        if pipe.contours:
-            table.putNumber("contours", len(pipe.contours))
+        if holder.best_fitness:
+            table.putNumber("fitness", holder.best_fitness)
+        if holder.best_group:
+            table.putNumber("contours", len(holder.best_group))
 
-        table.putNumber("x", pipe.center.X)
-        table.putNumber("y", pipe.center.Y)
+        table.putNumber("x", holder.best_center.X)
+        table.putNumber("y", holder.best_center.Y)
 
-        table.putNumber("target_fps", pipe.args.fps)
+        if args.fps:
+            table.putNumber("target_fps", args.fps)
+        else:
+            table.putNumber("target_fps", -1)
 
-        for key in pipe.fps.keys():
-            table.putNumber("{0}_fps".format(key), pipe.fps[key])
+        for key in holder.fps.keys():
+            table.putNumber("{0}_fps".format(key), holder.fps[key])
 
-        table.putNumber("width", pipe.args.size[0])
-        table.putNumber("height", pipe.args.size[1])
+        table.putNumber("width", args.size[0])
+        table.putNumber("height", args.size[1])
 
         # it is only as fast as the slowest component
-        table.putNumber("fps", min(pipe.fps.values()))
+        min_fps = 0.0
+        for x in holder.fps.values():
+            if x != None:
+                min_fps = min([min_fps, x])
+
+        table.putNumber("fps", min_fps)
         
         # just put so we know if it is updating
         table.putNumber("last_time", time.time())
 
-pipe = imagepipe.ImagePipe(args, imageHandle=imageHandle)
+holder = imageholder.ImageHolder(args.source, args.size, args.H, args.L, args.S, args.num, args.exposure, args.fps, args.save_input, args.save_output, args.filter, args.fit, args.Dconfig, image_handler)
 
-pipe.start()
+holder.start()
+
+#pipe = imagepipe.ImagePipe(args, imageHandle=imageHandle)
+
+#pipe.start()
 

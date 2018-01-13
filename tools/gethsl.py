@@ -5,13 +5,13 @@ import glob
 import os
 import sys
 import signal
-
+import cv2
 
 import argparse
 
-parser = argparse.ArgumentParser(description='PunkVision - gethsl')
+parser = argparse.ArgumentParser(description='punkvision - gethsl')
 
-parser.add_argument('--source', '--input', default=None, help='source/input (out/0.jpg)')
+parser.add_argument('--source', default=None, help='source/input (out/0.jpg)')
 #parser.add_argument('-cv', default=2, type=int, help='OpenCV version')
 parser.add_argument('--size', default=None, type=int, nargs=2, help='size of image')
 parser.add_argument('--buffer', default=10, type=int, help='destroy N images from camera')
@@ -21,26 +21,6 @@ args = parser.parse_args()
 
 _LDOWN, _LUP = None, None
 
-if cv2.__version__[0] == "2":
-    print ("OpenCV2")
-    import cv2.cv as cv
-    _LDOWN = cv.CV_EVENT_LBUTTONDOWN
-    _LUP = cv.CV_EVENT_LBUTTONUP
-elif cv2.__version__[0] == "3":
-    print ("OpenCV3")
-    import cv2 as cv
-    _LDOWN = cv.EVENT_LBUTTONDOWN
-    _LUP = cv.EVENT_LBUTTONUP
-else:
-    print ("Don't know what OpenCV version!")
-    exit(3)
-
-vargs = vars(args)
-for k in vargs:
-    if isinstance(vargs[k], list):
-        setattr(args, k, tuple(vargs[k]))
-
-args.source = [args.source]
 avgs = []
 mins = []
 maxs = []
@@ -53,25 +33,25 @@ def get_slice(start, end):
     im = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
     return im[start[1]:end[1],start[0]:end[0]]
 
-spt, ept = None, None
-minxy, maxxy = None, None
+sx, sy, ex, ey = 0, 0, 0 ,0
 
+minxy, maxxy = (0, 0), (0, 0)
 
 button_down = False
 
 def on_mouse(event, x, y, flags, params):
-    global spt; global ept
+    global sx; global sy; global ex; global ey
     global minxy; global maxxy
     global avgs; global mins; global maxs
     global button_down
-    if event == _LDOWN:
+    if event == cv.EVENT_LBUTTONDOWN:
         button_down = True
-        spt = (x, y)
-    elif event == _LUP:
+        sx, sy = x, y
+    elif event == cv.EVENT_LBUTTONUP:
         button_down = False
-        ept = (x, y)
-        minxy = (min([spt[0], ept[0]]), min([spt[1], ept[1]]))
-        maxxy = (max([spt[0], ept[0]]), max([spt[1], ept[1]]))
+        ex, ey = x, y
+        minxy = (min([sx, ex]), min([sy, ey]))
+        maxxy = (max([sx, ex]), max([sy, ey]))
         data = get_slice(minxy, maxxy)
         H, L, S = data[:,:,0], data[:,:,1], data[:,:,2]  
         na = np.average
@@ -143,16 +123,15 @@ def update_im():
     global img
     if args.source[0].startswith("/dev/video"):
         global cam
-        l_int = len(args.source[0]) - 1
-        while l_int >= 0 and args.source[0][l_int].isdigit():
-            l_int -= 1
+        
         if count == 0:
-            if args.exposure is not None:
+            """if args.exposure is not None:
                 cmd = "v4l2-ctl -d {0} -c exposure_auto=1 -c exposure_absolute={1}".format(args.source[0], args.exposure)
                 os.system(cmd)
                 time.sleep(.125)
+            """
 
-            cam = cv2.VideoCapture(int(args.source[0][l_int+1:]))
+            cam = cv2.VideoCapture(int(args.source[0].replace('/dev/video', "")))
 
         for i in range(0, args.buffer):
             cam.read()
@@ -179,17 +158,18 @@ while do_l:
     k = cv2.waitKey(0)
 
     # right arrow
-    if k == 65363:
+    if k == 83:
         count += 1
     #left arrow
-    elif k == 65361:
+    elif k == 81:
         count -= 1
     #delete key
-    elif k == 65288:
+    elif k == 255:
         del avgs[-1]
         del mins[-1]
         del maxs[-1]
-    elif k == 10 or count >= len(args.source) or count < 0:
+    # esc
+    elif k == 27 or count >= len(args.source) or count < 0:
         cv2.destroyAllWindows()
         print_end()
         do_l = False

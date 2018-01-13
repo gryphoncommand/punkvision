@@ -282,7 +282,7 @@ class ImagePipe():
             im = cv2.resize(im, self.args.size, interpolation=cv2.INTER_CUBIC)
             height, width, depth = im.shape
         im = cv2.cvtColor(im, cv2.COLOR_BGR2HLS)
-        if self.args.D["reg"] not in (False, None):
+        if self.args.Dconfig["reg"] not in (False, None):
             oversample = 5
             avgLuminance = (oversample ** 2) * numpy.sum(im[0:height:oversample,0:width:oversample,1]) / (height * width)
             im[::1] = numpy.multiply(im[::1], 100.0 / avgLuminance)
@@ -328,15 +328,15 @@ class ImagePipe():
                     center += _cen
                 if len(centers) != 0:
                     center = center / float(len(centers))
-                    if not self.args.D["draw"] in (False, None):
-                        if not self.args.D["contour"] in (False, None):
+                    if not self.args.Dconfig["draw"] in (False, None):
+                        if not self.args.Dconfig["contour"] in (False, None):
                             for i in range(0, len(contours)):
-                                cv2.drawContours(im, contours, i, self.args.D["contour"], self.args.D["contour-thickness"])
+                                cv2.drawContours(im, contours, i, self.args.Dconfig["contour"], self.args.Dconfig["contour-thickness"])
                         
-                        if not self.args.D["contour-reticle"] in (False, None):
-                            retcol = self.args.D["contour-reticle"]
-                            retsize = self.args.D["contour-reticle-size"]
-                            retthickness = self.args.D["contour-reticle-thickness"]
+                        if not self.args.Dconfig["contour-reticle"] in (False, None):
+                            retcol = self.args.Dconfig["contour-reticle"]
+                            retsize = self.args.Dconfig["contour-reticle-size"]
+                            retthickness = self.args.Dconfig["contour-reticle-thickness"]
                             for j in range(0, len(centers)):
                                 cv2.circle(im, centers[j].std(), retsize, retcol, retthickness)
                                 offX = pmath.Pt((retsize, 0))
@@ -344,10 +344,10 @@ class ImagePipe():
                                 cv2.line(im, (centers[j] - offX).std(), (centers[j] + offX).std(), retcol, retthickness)
                                 cv2.line(im, (centers[j] - offY).std(), (centers[j] + offY).std(), retcol, retthickness)
 
-                        if not self.args.D["reticle"] in (False, None):
-                            retcol = self.args.D["reticle"]
-                            retsize = self.args.D["reticle-size"]
-                            retthickness = self.args.D["reticle-thickness"]
+                        if not self.args.Dconfig["reticle"] in (False, None):
+                            retcol = self.args.Dconfig["reticle"]
+                            retsize = self.args.Dconfig["reticle-size"]
+                            retthickness = self.args.Dconfig["reticle-thickness"]
                             cv2.circle(im, center.std(), retsize, retcol, retthickness)
                             offX = pmath.Pt((retsize, 0))
                             offY = pmath.Pt((0, retsize))

@@ -2,6 +2,13 @@
 
 A realtime vision program for FRC teams.
 
+## Installing Dependencies
+
+If you are on a macbook (school-issued in our case), run `./scripts/install_schoolmac.sh`.
+
+If you are on an Debian/Ubuntu distribution of linux, run `sudo ./scripts/install_ubuntu.sh`
+
+
 ## Installing
 
 Set `./TE.AM`'s contents to your team number seperated into the middle IP notation.
@@ -35,4 +42,9 @@ Now, reboot, and it should run the autostart scripts on boot!
 
 Please report bugs to the [issues](https://github.com/LN-STEMpunks/PunkVision/issues)
 
+Here are a few common ones:
+
+"**Could not find any downloads that satisfy the requirement opencv-python**" while installing dependencies.
+
+  * To fix this, run `sudo pip3 install --upgrade pip`
 
