@@ -13,7 +13,7 @@ import numpy
 # this is a class to generate and hold images
 class ImageHolder:
 
-    def __init__(self, image_source, size, H, L, S, N_contours=1, exposure=None, fps_lim=None, save_input_pattern=None, save_output_pattern=None, filters={}, fitness={}, Dconfig={}, handler=None, save_every=1):
+    def __init__(self, image_source, size, H, L, S, group_size=2, num=1, exposure=None, fps_lim=None, save_input_pattern=None, save_output_pattern=None, filters={}, fitness={}, Dconfig={}, handler=None, save_every=1):
         """
 
         image_source can be "/dev/video[N]" to use a camera, or a glob pattern such as "files/*.png"
@@ -37,9 +37,11 @@ class ImageHolder:
         self.L = L
         self.S = S
 
-        self.fps_lim = fps_lim
+        self.group_size = group_size
+        self.num = num
 
-        self.N_contours = N_contours
+
+        self.fps_lim = fps_lim
 
         self.best_fitness = None
         self.best_group = None
@@ -120,6 +122,7 @@ class ImageHolder:
         elif self.__images is not None:
             self.im["input"] = cv2.imread(self.__images[self.num_images["input"] % len(self.__images)])
             self.num_images["input"] += 1
+            time.sleep(1.0 / 60)
             
         self.last_ran = time.time()
 
@@ -127,10 +130,18 @@ class ImageHolder:
         cvt_im = cv2.inRange(im, (self.H[0], self.L[0], self.S[0]),  (self.H[1], self.L[1], self.S[1]))
 
         st = time.time()
-        _, raw_contours, _ = cv2.findContours(cvt_im, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
+        _, _raw_contours, _ = cv2.findContours(cvt_im, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
         et = time.time()
  
+        raw_contours = []
+
+        for rc in _raw_contours:
+            center = pmath.Pt(rc)
+            if center.X is not None:
+                raw_contours += [rc]
+            
         contours = []
+
         for i in range(0, len(raw_contours)):
             good = True
 
@@ -175,18 +186,13 @@ class ImageHolder:
         return total_fitness
 
     def get_best_fit(self, contours):
-        max_fitness = None
-        max_idxs = None
-        for indexes in itertools.combinations(range(0, len(contours)), self.N_contours):
-            c_fit = self.get_fitness([contours[i] for i in indexes])
-            if max_fitness is None or c_fit > max_fitness:
-                max_fitness = c_fit
-                max_idxs = indexes
-        if max_fitness is not None:
-            return [contours[i] for i in max_idxs], max_fitness
-        else:
-            return None, None
+        all_groups = []
+        for indexes in itertools.combinations(range(0, len(contours)), self.group_size):
+            all_groups += [contours[i] for i in indexes]
 
+        sorted_contours_groups = sorted(all_groups, key=self.get_fitness, reverse=True)
+
+        return sorted_contours_groups[:self.num]
 
     def process_image(self):
         if self.im["input"] is None:
@@ -218,28 +224,32 @@ class ImageHolder:
 
         contours = self.get_contours(im)
 
+        print ('total num contours: ' + str(len(contours)))
+
 
         #print ('getting best fit')
         
-        best_group, best_fitness = self.get_best_fit(contours)
+        best_groups = self.get_best_fit(contours)
 
         #print('got it')
 
         # drawing
-        if best_fitness != None:
-            for i in range(0, len(best_group)):
-                cv2.drawContours(im, best_group, i, self.Dconfig["contour"], self.Dconfig["contour-thickness"])
-
+        if len(best_groups) > 0:
+            for best_group in best_groups:
+                for i in range(0, len(best_group)):
+                    cv2.drawContours(im, best_group, i, self.Dconfig["contour"], self.Dconfig["contour-thickness"])
 
 
         # end drawing
         im = cv2.cvtColor(im, cv2.COLOR_HLS2BGR)
 
-        self.best_group = best_group
-        self.best_fitness = best_fitness
-        if self.best_fitness is not None:
-            best_centers = [pmath.Pt(c) for c in best_group]
-            self.best_center = sum([i.v[0] for i in best_centers]) / len(best_group), sum([i.v[1] for i in best_centers]) / len(best_group)
+        self.best_groups = best_groups
+        self.best_fitnesses = list(map(self.get_fitness, best_groups))
+        if len(self.best_fitnesses) > 0:
+            best_centerses = [[pmath.Pt(c) for c in best_group] for best_group in best_groups]
+            self.best_centers = []
+            for best_centers in best_centerses:
+                self.best_centers += [sum([i.v[0] for i in best_centers]) / len(best_group), sum([i.v[1] for i in best_centers]) / len(best_group)]
         else:
             self.best_center = None
 
@@ -258,14 +268,16 @@ class ImageHolder:
         im = self.im["output"].copy()
 
         if self.save_input_pattern is not None and self.num_images["output"] % self.save_every == 0:
-            file_name = self.save_input_pattern.format(num=self.num_images["output"])
+            num_fmt = "%08d" % self.num_images["output"]
+            file_name = self.save_input_pattern.format(num=num_fmt)
             cv2.imwrite(file_name, im)
 
         if self.save_output_pattern is not None and self.num_images["output"] % self.save_every == 0:
-            file_name = self.save_output_pattern.format(num=self.num_images["output"])
+            num_fmt = "%08d" % self.num_images["output"]
+            file_name = self.save_output_pattern.format(num=num_fmt)
             cv2.imwrite(file_name, im)
 
-        print (self.fps)
+        #print (self.fps)
 
         self.handler(self)
 
