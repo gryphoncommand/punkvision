@@ -435,6 +435,8 @@ class VideoSource(VPL):
 
             source = self.get("source", 0)
 
+            # default images
+            self.camera_flag, self.camera_image = True, np.zeros((320, 240, 3), np.uint8)
 
             if isinstance(source, int) or source.isdigit():
                 if not isinstance(source, int):
@@ -444,7 +446,6 @@ class VideoSource(VPL):
                 self.do_async(self.camera_loop)
                 self.get_image = self.get_camera_image
                 self.set_camera_props()
-                self.camera_single_loop()
                 
             elif isinstance(source, str):
                 _, extension = os.path.splitext(source)
@@ -466,7 +467,6 @@ class VideoSource(VPL):
                 self.do_async(self.camera_loop)
                 self.get_image = self.get_camera_image
                 self.set_camera_props()
-                self.camera_single_loop()
                 
 
         flag, image = self.get_image()
