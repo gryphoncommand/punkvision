@@ -43,6 +43,8 @@ parser.add_argument('--stream', default=None, type=int, help='stream to a certai
 
 parser.add_argument('--noshow', action='store_true', help="if this flag is set, do not show a window (useful for raspberry PIs without a screen, you can use --stream)")
 
+parser.add_argument('--noprop', action='store_true', help="if this flag is set, do not set capture properties (some may fail without this, use this if you are getting a QBUF error)")
+
 
 args = parser.parse_args()
 
@@ -52,8 +54,9 @@ pipe = vpl.Pipeline("webcam")
 cam_props = vpl.CameraProperties()
 
 # set preferred width and height
-cam_props["FRAME_WIDTH"] = args.size[0]
-cam_props["FRAME_HEIGHT"] = args.size[1]
+if not args.noprop:
+    cam_props["FRAME_WIDTH"] = args.size[0]
+    cam_props["FRAME_HEIGHT"] = args.size[1]
 
 # find the source
 pipe.add_vpl(vpl.VideoSource(source=args.source, properties=cam_props))
