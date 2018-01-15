@@ -196,6 +196,7 @@ class ImageHolder:
 
     def get_best_fit(self, contours):
         all_groups = []
+
         for indexes in itertools.combinations(range(0, len(contours)), self.group_size):
             all_groups += [contours[i] for i in indexes]
 
@@ -258,6 +259,7 @@ class ImageHolder:
             best_centerses = [[pmath.Pt(c) for c in best_group] for best_group in best_groups]
             self.best_centers = []
             for best_centers in best_centerses:
+                print (best_centers)
                 self.best_centers += [sum([i.v[0] for i in best_centers]) / len(best_group), sum([i.v[1] for i in best_centers]) / len(best_group)]
         else:
             self.best_center = None

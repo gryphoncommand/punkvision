@@ -22,8 +22,16 @@ can also find a copy at http://www.gnu.org/licenses/.
 
 
 from enum import Enum
+import time
+import threading
+import math
+import os
+import pathlib
+
 
 import cv2
+
+import numpy as np
 
 class BlurType(Enum):
 
@@ -45,6 +53,7 @@ definition of all opencv cap props
 """
 
 cap_prop_lookup = {
+
   "POS_MSEC": cv2.CAP_PROP_POS_MSEC,
   "POS_FRAMES": cv2.CAP_PROP_POS_FRAMES,
   "POS_AVI_RATIO": cv2.CAP_PROP_POS_AVI_RATIO,
@@ -118,6 +127,9 @@ class Pipeline:
         else:
             self.chain = chain
 
+        self.chain_time = []
+        self.chain_fps = (0, [])
+
         self.vals = {}
 
     def __str__(self):
@@ -158,7 +170,7 @@ class Pipeline:
             return vpl
 
 
-    def process(self, image):
+    def process(self, image, data=None):
         """
 
         run through the chain, and process the image
@@ -172,10 +184,21 @@ class Pipeline:
         else:
             im = image.copy()
 
+        chain_time = []
+
+        if data is None:
+            data = {}
+
         for vpl in self.chain:
-            im = vpl.process(im)
+            st = time.time()
+            im, data = vpl.process(self, im, data)
+            et = time.time()
+            chain_time += [et - st]
         
-        return im
+        self.chain_time = sum(chain_time), chain_time
+        self.chain_fps = 1.0 / sum(chain_time), [1.0 / i if i != 0 else float('inf') for i in chain_time]
+        
+        return im, data
 
     def __getitem__(self, key, default=None):
         return self.vals.get(key, default)
@@ -233,16 +256,63 @@ class VPL:
         self.kwargs[key] = val
 
 
-    def process(self, pipe, image):
+    """
+
+    for async operations, you can call this and it doesn't stall
+
+    """
+
+    def do_async(self, method, args=()):
+        thread = threading.Thread(target=method, args=args)
+        thread.start()
+
+    def process(self, pipe, image, data):
         """
 
         this is what actually happens to the image (the functionality of the plugin).
 
-        You should have `pipe` and `image`, which are references to the Pipeline that called it, and the image that is to be processed
+          * pipe : the Pipeline() class that called this method (which can be useful)
+          * image : the image being processed
+          * data : generic data that can be passed between plugins (as a dictionary)
 
         """
 
-        return image
+        return image, data
+
+class SubVPL(VPL):
+    """
+
+    This is a control VPL, it treats a Pipeline as a single VPL, so you can embed stuff in a VPL
+
+    Usage: SubVPL(pipe=Pipeline(...))
+
+      * "pipe" = pipeline to run as a VPL
+
+    """
+
+    def process(self, pipe, image, data):
+        return self["pipe"].process(image, data)
+
+
+class ForkVPL(VPL):
+    """
+
+    This is a control VPL, it forks and runs another Pipeline in another thread.
+
+    This is useful for things that publish to network tables, or look for different vision targets
+
+    Usage: ForkVPL(pipe=Pipeline(...))
+
+      * "pipe" = pipeline to run as a VPL
+
+    THIS ONLY RETURNS THE IMAGE PASSED TO IT
+
+    """
+
+    def process(self, pipe, image, data):
+        self.do_async(self["pipe"].process, (image.copy(), data.copy()))
+        return image, data
+
 
 class VideoSource(VPL):
     """
@@ -261,17 +331,52 @@ class VideoSource(VPL):
 
     """
 
-    def process(self, image):
+    def process(self, pipe, image, data):
         if self["camera"] is None:
             self["camera"] = cv2.VideoCapture(self.get("id", 0))
             
             props = self["properties"]
             if props != None:
                 for p in props.props:
-                    print ("setting: " + str(cap_prop_lookup[p]) + " to: " + str(type(props[p])))
+                    #print ("setting: " + str(cap_prop_lookup[p]) + " to: " + str(type(props[p])))
                     self["camera"].set(cap_prop_lookup[p], props[p])
 
-        return self["camera"].read()[1]
+        return self["camera"].read()[1], data
+
+class VideoSaver(VPL):
+    """
+
+    Usage: VideoSaver(path="data/{num}.png")
+
+      * "path" = image format
+
+
+    optional arguments:
+    
+      * "every" = save every N frames (default 1 for every frame)
+
+    Saves images as they are received to their destination
+
+    """
+
+    def save_image(self, image, num):
+        loc = pathlib.Path(self["path"].format(num=num))
+        if not loc.parent.exists():
+            loc.parent.mkdir(parents=True)
+        cv2.imwrite(str(loc), image)
+
+    def process(self, pipe, image, data):
+        if not hasattr(self, "num"):
+            self.num = 0
+        
+        if self.num % self.get("every", 1) == 0:
+            # async save it
+            self.do_async(self.save_image, (image.copy(), self.num))
+
+        self.num += 1
+
+        return image, data
+
 
 class Resize(VPL):
     """
@@ -287,7 +392,7 @@ class Resize(VPL):
 
     """
 
-    def process(self, image):
+    def process(self, pipe, image, data):
         height, width, depth = image.shape
 
         if width != self["w"] or height != self["h"]:
@@ -295,7 +400,7 @@ class Resize(VPL):
             return cv2.resize(image, (self["w"], self["h"]), interpolation=resize_method)
         else:
             # if it is the correct size, don't spend time resizing it
-            return image
+            return image, data
 
 
 class Blur(VPL):
@@ -314,20 +419,21 @@ class Blur(VPL):
 
     """
 
-    def process(self, image):
+    def process(self, pipe, image, data):
         if self["w"] in (0, None) or self["h"] in (0, None):
-            return image
+            return image, data
         else:
             resize_method = self.get("method", BlurType.BOX)
 
             if resize_method == BlurType.GAUSSIAN:
                 sx, sy = self.get("sx", 0), self.get("sy", 0)
-                return cv2.GaussianBlur(image, (self["w"], self["h"]), sigmaX=sx, sigmaY=sy)
+                return cv2.GaussianBlur(image, (self["w"], self["h"]), sigmaX=sx, sigmaY=sy), data
             elif resize_method == BlurType.MEDIAN:
-                return cv2.medianBlur(image, self["w"])
+                return cv2.medianBlur(image, self["w"]), data
             else:
                 # default is BlurType.BOX
-                return cv2.blur(image, (self["w"], self["h"]))        
+                return cv2.blur(image, (self["w"], self["h"])), data
+
 
 class Display(VPL):
     """
@@ -338,12 +444,12 @@ class Display(VPL):
 
     """
 
-    def process(self, image):
+    def process(self, pipe, image, data):
 
         cv2.imshow(self["title"], image)
         cv2.waitKey(1)
 
-        return image
+        return image, data
 
 
 class PrintInfo(VPL):
@@ -352,31 +458,31 @@ class PrintInfo(VPL):
     Usage: PrintInfo()
 
 
-    This prints out info about the image
+    This prints out info about the image and pipeline
 
     """
 
-    def process(self, image):
+    def process(self, pipe, image, data):
         h, w, d = image.shape
         print ("width=%s, height=%s" % (w, h))
-        return image
+        return image, data
 
 
+class FPSCounter(VPL):
+    """
 
-pipe = Pipeline("mypipe")
+    Usage: FPSCounter()
 
-cam_props = CameraProperties()
 
-cam_props["FRAME_WIDTH"] = 640
-cam_props["FRAME_HEIGHT"] = 480
+    Simply adds the FPS in the bottom left corner
 
-pipe.add_vpl(VideoSource(id=0, properties=cam_props))
-pipe.add_vpl(PrintInfo())
-#pipe.add_vpl(Resize(w=1280, h=720))
-#pipe.add_vpl(Blur(w=63, h=63, method=BlurType.MEDIAN))
-pipe.add_vpl(Display(title="mytitle"))
+    """
 
-while True:
-    # we let our VideoSource do the processing
-    pipe.process(image=None)
+    def process(self, pipe, image, data):
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        height, width, _ = image.shape
+        geom_mean = math.sqrt(height * width)
+        offset = geom_mean * .01
+        image = cv2.putText(image, "%2.1f" % pipe.chain_fps[0], (int(offset), int(height - offset)), font, offset / 6.0, (255, 0, 0), int(offset / 6.0 + 2))
+        return image, data
 
