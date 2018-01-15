@@ -385,6 +385,7 @@ class VideoSource(VPL):
             self.has_init = True
             source = self.get("source", 0)
             self.get_image = None
+            self.camera_flag = True
 
             if isinstance(source, int) or source.isdigit():
                 if not isinstance(source, int):
