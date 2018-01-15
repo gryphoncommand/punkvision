@@ -397,7 +397,7 @@ class Resize(VPL):
 
         if width != self["w"] or height != self["h"]:
             resize_method = self.get("method", cv2.INTER_LINEAR)
-            return cv2.resize(image, (self["w"], self["h"]), interpolation=resize_method)
+            return cv2.resize(image, (self["w"], self["h"]), interpolation=resize_method), data
         else:
             # if it is the correct size, don't spend time resizing it
             return image, data
