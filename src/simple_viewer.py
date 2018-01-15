@@ -33,9 +33,12 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Example webcam view for punkvision')
 
-parser.add_argument('--cam', type=int, default=0, help='camera number')
+parser.add_argument('--source', type=str, default="0", help='camera number, image glob (like "data/*.png"), or video file ("x.mp4")')
 parser.add_argument('--size', type=int, nargs=2, default=(640, 480), help='image size')
 parser.add_argument('--blur', type=int, nargs=2, default=None, help='blur size')
+
+parser.add_argument('--save', default=None, help='save the stream to filesd (ex: "data/{num}.png"')
+
 
 args = parser.parse_args()
 
@@ -48,16 +51,26 @@ cam_props = vpl.CameraProperties()
 cam_props["FRAME_WIDTH"] = args.size[0]
 cam_props["FRAME_HEIGHT"] = args.size[1]
 
-cam_props["FPS"] = 30
+# find the source
+pipe.add_vpl(vpl.VideoSource(source=args.source, properties=cam_props))
 
-pipe.add_vpl(vpl.VideoSource(id=args.cam, properties=cam_props))
-# to ensure the size
+# ensure the size
 pipe.add_vpl(vpl.Resize(w=args.size[0], h=args.size[1]))
+
+# if we want to blur it
 if args.blur is not None:
-  pipe.add_vpl(vpl.Blur(w=args.blur[0], h=args.blur[1], method=vpl.BlurType.BOX))
-#pipe.add_vpl(VideoSaver(path="data/{num}.png")
+    pipe.add_vpl(vpl.Blur(w=args.blur[0], h=args.blur[1], method=vpl.BlurType.BOX))
+
+# optionally, save the results
+if args.save is not None:
+    pipe.add_vpl(vpl.VideoSaver(path=args.save))
+
+# add a FPS counter
 pipe.add_vpl(vpl.FPSCounter())
-pipe.add_vpl(vpl.Display(title="camera " + str(args.cam)))
+
+# display it
+pipe.add_vpl(vpl.Display(title="footage from " + str(args.source)))
+
 
 while True:
     # we let our VideoSource do the processing

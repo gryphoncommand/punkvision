@@ -26,6 +26,7 @@ import time
 import threading
 import math
 import os
+import glob
 import pathlib
 
 
@@ -72,10 +73,32 @@ cap_prop_lookup = {
   "EXPOSURE": cv2.CAP_PROP_EXPOSURE,
   "CONVERT_RGB": cv2.CAP_PROP_CONVERT_RGB,
   "RECTIFICATION": cv2.CAP_PROP_RECTIFICATION,
+
 # not supported
 #  "WHITE_BALANCE": cv2.CAP_PROP_WHITE_BALANCE,
 
 }
+
+# a list of valid image formats
+valid_image_formats = [
+    "png",
+    "jpg", "jpeg", "jp2", ".jpe",
+    "bmp",
+    "dib",
+    "webp",
+    "pbm", "pgm", "ppm",
+    "sr", "ras",
+    "tiff", "tif"
+]
+
+# valid video formats (not official)
+valid_video_formats = [
+    "mov",
+    "avi",
+    "mp4",
+    "mpeg",
+    "flv"
+]
 
 class CameraProperties:
 
@@ -112,9 +135,7 @@ Think of it similar to how VSTs handle audio, this is a plugin for video
 
 """
 
-
 import cv2
-
 
 class Pipeline:
 
@@ -197,7 +218,7 @@ class Pipeline:
         
         self.chain_time = sum(chain_time), chain_time
         self.chain_fps = 1.0 / sum(chain_time), [1.0 / i if i != 0 else float('inf') for i in chain_time]
-        print(self.chain_fps)
+        #print(self.chain_fps)
         return im, data
 
     def __getitem__(self, key, default=None):
@@ -317,12 +338,12 @@ class ForkVPL(VPL):
 class VideoSource(VPL):
     """
 
-    Usage: VideoSource(id=0)
+    Usage: VideoSource(source=0)
 
     optional arguments:
 
       * "camera" = camera object (default of None)
-      * "id" = camera index (default of 0)
+      * "source" = camera index (default of 0), or a string containing a video file (like "VIDEO.mp4") or a string containing images ("data/*.png")
       * "properties" = CameraProperties() object with CAP_PROP values (see that class for info)
 
     this sets the image to a camera.
@@ -331,17 +352,77 @@ class VideoSource(VPL):
 
     """
 
-    def process(self, pipe, image, data):
-        if self["camera"] is None:
-            self["camera"] = cv2.VideoCapture(self.get("id", 0))
-            
-            props = self["properties"]
-            if props != None:
-                for p in props.props:
-                    #print ("setting: " + str(cap_prop_lookup[p]) + " to: " + str(type(props[p])))
-                    self["camera"].set(cap_prop_lookup[p], props[p])
+    def camera_loop(self):
+        while True:
+            try:
+                self.camera_flag, self.camera_image = self.camera.read()
+            except:
+                pass
 
-        return self["camera"].read()[1], data
+    def set_camera_props(self):
+        props = self["properties"]
+        if props != None:
+            for p in props.props:
+                #print ("setting: " + str(cap_prop_lookup[p]) + " to: " + str(type(props[p])))
+                self.camera.set(cap_prop_lookup[p], props[p])
+
+    def get_camera_image(self):
+        return self.camera_flag, self.camera_image.copy()
+
+    def get_video_reader_image(self):
+        return self.video_reader.read()
+    
+    def get_image_sequence_image(self):
+        my_idx = self.images_idx % len(self.images)
+        self.images_idx += 1
+        if self.images[my_idx] is None:
+            self.images[my_idx] = cv2.imread(self.image_sequence_sources[my_idx])
+        return True, self.images[my_idx]
+
+    def process(self, pipe, image, data):
+        if not hasattr(self, "has_init"):
+            # first time running, default camera
+            self.has_init = True
+            source = self.get("source", 0)
+            self.get_image = None
+
+            if isinstance(source, int) or source.isdigit():
+                if not isinstance(source, int):
+                    source = int(source)
+                # create camera
+                self.camera = cv2.VideoCapture(source)
+                self.do_async(self.camera_loop)
+                self.get_image = self.get_camera_image
+                self.set_camera_props()
+                
+            elif isinstance(source, str):
+                _, extension = os.path.splitext(source)
+                extension = extension.replace(".", "").lower()
+                if extension in valid_image_formats:
+                    # have an image sequence
+                    self.image_sequence_sources = glob.glob(source)
+                    self.images = [None] * len(self.image_sequence_sources)
+                    self.images_idx = 0
+                    self.get_image = self.get_image_sequence_image
+                elif extension in valid_video_formats:
+                    # read from a video file
+                    self.video_reader = cv2.VideoCapture(source)
+                    self.get_image = self.get_video_reader_image
+                    
+            else:
+                # use an already instasiated camera
+                self.camera = source
+                self.do_async(self.camera_loop)
+                self.get_image = self.get_camera_image
+                self.set_camera_props()
+
+        flag, image = self.get_image()
+
+        #data["camera_flag"] = flag
+
+        return image, data
+
+
 
 class VideoSaver(VPL):
     """
@@ -360,7 +441,7 @@ class VideoSaver(VPL):
     """
 
     def save_image(self, image, num):
-        loc = pathlib.Path(self["path"].format(num=num))
+        loc = pathlib.Path(self["path"].format(num="%08d" % num))
         if not loc.parent.exists():
             loc.parent.mkdir(parents=True)
         cv2.imwrite(str(loc), image)
@@ -479,10 +560,28 @@ class FPSCounter(VPL):
     """
 
     def process(self, pipe, image, data):
+        if not hasattr(self, "fps_records"):
+            self.fps_records = []
+
+        if not hasattr(self, "last_print"):
+            self.last_print = (0, None)
+
+        ctime = time.time()
+        self.fps_records += [(ctime, pipe.chain_fps[0])]
+        
+        # filter only the last second of readings
+        self.fps_records = list(filter(lambda tp: abs(ctime - tp[0]) < 1.0, self.fps_records))
+
+        avg_fps = sum([fps for t, fps in self.fps_records]) / len(self.fps_records)
+
+        if self.last_print[1] is None or abs(ctime - self.last_print[0]) > 1.0 / 3.0:
+            self.last_print = (ctime, avg_fps)
+
+
         font = cv2.FONT_HERSHEY_SIMPLEX
         height, width, _ = image.shape
         geom_mean = math.sqrt(height * width)
         offset = geom_mean * .01
-        image = cv2.putText(image, "%2.1f" % pipe.chain_fps[0], (int(offset), int(height - offset)), font, offset / 6.0, (255, 0, 0), int(offset / 6.0 + 2))
-        return image, data
+        
+        return cv2.putText(image.copy(), "%2.1f" % self.last_print[1], (int(offset), int(height - offset)), font, offset / 6.0, (255, 0, 0), int(offset / 6.0 + 2)), data
 
