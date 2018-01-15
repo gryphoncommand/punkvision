@@ -285,6 +285,7 @@ class VPL:
 
     def do_async(self, method, args=( )):
         thread = threading.Thread(target=method, args=args)
+        thread.daemon = True
         thread.start()
 
     def process(self, pipe, image, data):

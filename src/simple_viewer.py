@@ -77,6 +77,8 @@ try:
         # we let our VideoSource do the processing
         pipe.process(image=None, data=None)
         #print (pipe.chain_fps)
-except KeyboardInterrupt:
+except (KeyboardInterrupt, SystemExit):
+    print("keyboard interrupt, quitting")
     exit(0)
+    
 
