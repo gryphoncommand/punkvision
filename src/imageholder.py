@@ -79,6 +79,8 @@ class ImageHolder:
             "output": None,
         }
 
+        self.printed_things = set()
+
         if self.image_source.startswith("/dev/video"):
             cam_index = int(self.image_source.replace("/dev/video", ""))
             self.__camera = cv2.VideoCapture(cam_index)
@@ -102,6 +104,13 @@ class ImageHolder:
             mkd = self.save_output_pattern.split("/")[0]
             if not os.path.exists(mkd):
                 os.makedirs(mkd)
+
+    # only prints things once, since it can get very annoying and cluttering
+    def __print_once(self, msg):
+        if msg not in self.printed_things:
+            print (msg)
+            self.printed_things.add(msg)
+
 
     def start(self):
         for thread in self.threads:
@@ -198,7 +207,7 @@ class ImageHolder:
 
         height, width, depth = im.shape
         if (width, height) != self.size:
-            print ("Image had to be manually resized from {0} to {1}".format((width, height), self.size))
+            self.__print_once ("Image had to be manually resized from {0} to {1}".format((width, height), self.size))
             im = cv2.resize(im, self.size, interpolation=cv2.INTER_LANCZOS4)
             height, width, depth = im.shape
 
@@ -265,7 +274,7 @@ class ImageHolder:
             file_name = self.save_output_pattern.format(num=self.num_images["output"])
             cv2.imwrite(file_name, im)
 
-        print (self.fps)
+        #print (self.fps)
 
         self.handler(self)
 
