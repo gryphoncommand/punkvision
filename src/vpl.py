@@ -218,7 +218,7 @@ class Pipeline:
         
         self.chain_time = sum(chain_time), chain_time
         self.chain_fps = 1.0 / sum(chain_time), [1.0 / i if i != 0 else float('inf') for i in chain_time]
-        #print(self.chain_fps)
+        print ("fps: " + self.chain_fps[0])
         return im, data
 
     def __getitem__(self, key, default=None):
@@ -352,10 +352,14 @@ class VideoSource(VPL):
 
     """
 
+    def camera_single_loop(self):
+        self.camera_flag, self.camera_image = self.camera.read()
+
+
     def camera_loop(self):
         while True:
             try:
-                self.camera_flag, self.camera_image = self.camera.read()
+                self.camera_single_loop()
             except:
                 pass
 
@@ -367,7 +371,7 @@ class VideoSource(VPL):
                 self.camera.set(cap_prop_lookup[p], props[p])
 
     def get_camera_image(self):
-        return self.camera_flag, self.camera_image.copy()
+        return self.camera_flag, self.camera_image
 
     def get_video_reader_image(self):
         return self.video_reader.read()
@@ -383,9 +387,10 @@ class VideoSource(VPL):
         if not hasattr(self, "has_init"):
             # first time running, default camera
             self.has_init = True
-            source = self.get("source", 0)
             self.get_image = None
-            self.camera_flag = True
+
+            source = self.get("source", 0)
+
 
             if isinstance(source, int) or source.isdigit():
                 if not isinstance(source, int):
@@ -395,6 +400,7 @@ class VideoSource(VPL):
                 self.do_async(self.camera_loop)
                 self.get_image = self.get_camera_image
                 self.set_camera_props()
+                self.camera_single_loop()
                 
             elif isinstance(source, str):
                 _, extension = os.path.splitext(source)
@@ -416,6 +422,8 @@ class VideoSource(VPL):
                 self.do_async(self.camera_loop)
                 self.get_image = self.get_camera_image
                 self.set_camera_props()
+                self.camera_single_loop()
+                
 
         flag, image = self.get_image()
 
