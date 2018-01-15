@@ -691,6 +691,8 @@ class MJPGServer(VPL):
 
     This is code to host a web server
 
+    This only works on google chrome, connect to "localhost:PORT" to see the image. Or, if you are hosting it on another device (such as a raspi), connect like (raspberrypi.local:PORT) in your browser
+
     """
 
     def process(self, pipe, image, data):

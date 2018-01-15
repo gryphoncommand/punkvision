@@ -74,9 +74,9 @@ pipe.add_vpl(vpl.FPSCounter())
 
 # display it
 if not args.noshow:
-  pipe.add_vpl(vpl.Display(title="footage from " + str(args.source)))
+    pipe.add_vpl(vpl.Display(title="footage from " + str(args.source)))
 if args.stream is not None:
-  pipe.add_vpl(vpl.MJPGServer(port=args.stream))
+    pipe.add_vpl(vpl.MJPGServer(port=args.stream))
 
 
 try:
