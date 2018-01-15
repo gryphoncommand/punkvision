@@ -37,7 +37,11 @@ parser.add_argument('--source', type=str, default="0", help='camera number, imag
 parser.add_argument('--size', type=int, nargs=2, default=(640, 480), help='image size')
 parser.add_argument('--blur', type=int, nargs=2, default=None, help='blur size')
 
-parser.add_argument('--save', default=None, help='save the stream to filesd (ex: "data/{num}.png"')
+parser.add_argument('--save', default=None, help='save the stream to files (ex: "data/{num}.png"')
+
+parser.add_argument('--stream', default=None, type=int, help='stream to a certain port (ex: "5802" and then connect to "localhost:5802" to view the stream)')
+
+parser.add_argument('--noshow', action='store_true', help="if this flag is set, do not show a window (useful for raspberry PIs without a screen, you can use --stream)")
 
 
 args = parser.parse_args()
@@ -57,26 +61,27 @@ pipe.add_vpl(vpl.VideoSource(source=args.source, properties=cam_props))
 # ensure the size
 pipe.add_vpl(vpl.Resize(w=args.size[0], h=args.size[1]))
 
-# if we want to blur it
-if args.blur is not None:
-    pipe.add_vpl(vpl.Blur(w=args.blur[0], h=args.blur[1], method=vpl.BlurType.BOX))
-
 # optionally, save the results
 if args.save is not None:
     pipe.add_vpl(vpl.VideoSaver(path=args.save))
+
+# if we want to blur it
+if args.blur is not None:
+    pipe.add_vpl(vpl.Blur(w=args.blur[0], h=args.blur[1], method=vpl.BlurType.BOX))
 
 # add a FPS counter
 pipe.add_vpl(vpl.FPSCounter())
 
 # display it
-pipe.add_vpl(vpl.Display(title="footage from " + str(args.source)))
+if not args.noshow:
+  pipe.add_vpl(vpl.Display(title="footage from " + str(args.source)))
+if args.stream is not None:
+  pipe.add_vpl(vpl.MJPGServer(port=args.stream))
 
 
 try:
-    while True:
-        # we let our VideoSource do the processing
-        pipe.process(image=None, data=None)
-        #print (pipe.chain_fps)
+      # we let our VideoSource do the processing, autolooping
+      pipe.process(image=None, data=None, loop=True)
 except (KeyboardInterrupt, SystemExit):
     print("keyboard interrupt, quitting")
     exit(0)

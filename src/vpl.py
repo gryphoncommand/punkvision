@@ -29,6 +29,9 @@ import os
 import glob
 import pathlib
 
+from http.server import BaseHTTPRequestHandler,HTTPServer
+from socketserver import ThreadingMixIn
+
 
 import cv2
 
@@ -153,6 +156,9 @@ class Pipeline:
 
         self.vals = {}
 
+        self.is_quit = False
+
+
     def __str__(self):
         ret = "Pipeline("
 
@@ -166,6 +172,15 @@ class Pipeline:
             ret += "  " + str(vpl) + ", \n"
         ret += "])"
         return ret
+
+    def quit(self):
+        """
+
+        sets quit flag
+
+        """
+        self.is_quit = True
+
 
     def add_vpl(self, vpl):
         """
@@ -190,8 +205,26 @@ class Pipeline:
             self.chain.remove(vpl)
             return vpl
 
+    def __raw_chain(self, im, data):
+        chain_time = []
 
-    def process(self, image, data=None):
+        for vpl in self.chain:
+            st = time.time()
+            im, data = vpl.process(self, im, data)
+            et = time.time()
+            if self.is_quit:
+                break
+            chain_time += [et - st]
+
+        def fps(t):
+            return 1.0 / t if t != 0 else float('inf')      
+        
+        self.chain_time = sum(chain_time), chain_time
+        self.chain_fps = fps(sum(chain_time)), [fps(i) for i in chain_time]
+        
+        return im, data, chain_time
+
+    def process(self, image, data=None, loop=False):
         """
 
         run through the chain, and process the image
@@ -205,20 +238,23 @@ class Pipeline:
         else:
             im = image.copy()
 
-        chain_time = []
 
         if data is None:
             data = {}
 
-        for vpl in self.chain:
-            st = time.time()
-            im, data = vpl.process(self, im, data)
-            et = time.time()
-            chain_time += [et - st]
-        
-        self.chain_time = sum(chain_time), chain_time
-        self.chain_fps = 1.0 / sum(chain_time), [1.0 / i if i != 0 else float('inf') for i in chain_time]
-        print ("fps: " + "%.1f" % self.chain_fps[0])
+        self.is_quit = False
+        if loop:
+            while not self.is_quit:
+                im, data, chain_time = self.__raw_chain(im, data)
+                if not self.is_quit:
+                    pass
+                    #print ("fps: " + "%.1f" % self.chain_fps[0])
+        else:
+            im, data, chain_time = self.__raw_chain(im, data)
+            if not self.is_quit:
+                pass
+                #print ("fps: " + "%.1f" % self.chain_fps[0])
+                
         return im, data
 
     def __getitem__(self, key, default=None):
@@ -346,7 +382,8 @@ class VideoSource(VPL):
       * "camera" = camera object (default of None)
       * "source" = camera index (default of 0), or a string containing a video file (like "VIDEO.mp4") or a string containing images ("data/*.png")
       * "properties" = CameraProperties() object with CAP_PROP values (see that class for info)
-
+      * "repeat" = whether to repeat the image sequence (default False)
+    
     this sets the image to a camera.
 
     THIS CLEARS THE IMAGE THAT WAS BEING PROCESSED, USE THIS AS THE FIRST PLUGIN
@@ -378,8 +415,14 @@ class VideoSource(VPL):
         return self.video_reader.read()
     
     def get_image_sequence_image(self):
-        my_idx = self.images_idx % len(self.images)
+        my_idx = self.images_idx
+        if self.get("repeat", False):
+            my_idx = my_idx % len(self.images)
         self.images_idx += 1
+
+        if my_idx >= len(self.images):
+            return False, None
+
         if self.images[my_idx] is None:
             self.images[my_idx] = cv2.imread(self.image_sequence_sources[my_idx])
         return True, self.images[my_idx]
@@ -429,6 +472,8 @@ class VideoSource(VPL):
         flag, image = self.get_image()
 
         #data["camera_flag"] = flag
+        if image is None:
+            pipe.quit()
 
         return image, data
 
@@ -594,4 +639,67 @@ class FPSCounter(VPL):
         offset = geom_mean * .01
         
         return cv2.putText(image.copy(), "%2.1f" % self.last_print[1], (int(offset), int(height - offset)), font, offset / 6.0, (255, 0, 0), int(offset / 6.0 + 2)), data
+
+
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    """Handle requests in a separate thread."""
+
+    def update_image(self, image):
+        self.RequestHandlerClass.image = image
+
+class MJPGStreamHandle(BaseHTTPRequestHandler):
+    """
+
+    handles web requests for MJPG
+
+    """
+
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'multipart/x-mixed-replace; boundary=--jpgboundary')
+        self.end_headers()
+
+        if not hasattr(self, "image"):
+            return
+
+        while True:
+            # MAKE sure this refreshes the image every time
+            im = self.image.copy()
+
+            # encode image
+            cv2s = cv2.imencode('.jpg', im)[1].tostring()
+
+            # write a jpg
+            self.wfile.write("--jpgboundary".encode())
+            self.send_header('Content-type', 'image/jpeg')
+            self.send_header('Content-length', str(len(cv2s)).encode())
+            self.end_headers()
+            self.wfile.write(cv2s)
+
+            while np.array_equal(self.image, im):
+                time.sleep(0.01)
+        return
+
+
+class MJPGServer(VPL):
+    """
+
+    Usage: MJPGServer(port=5802, fps_cap=None)
+
+      * "port" = the port to host it on
+
+    This is code to host a web server
+
+    """
+
+    def process(self, pipe, image, data):
+        if not hasattr(self, "http_server"):
+            self.http_server = ThreadedHTTPServer(('0.0.0.0', self["port"]), MJPGStreamHandle)
+            self.http_server.daemon_threads = True
+            self.do_async(self.http_server.serve_forever)
+
+        self.http_server.update_image(image.copy())
+
+        return image, data
 

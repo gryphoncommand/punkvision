@@ -248,6 +248,7 @@ def image_handler(holder):
         # just put so we know if it is updating
         table.putNumber("last_time", time.time())
 
+
 holder = imageholder.ImageHolder(args.source, args.size, args.H, args.L, args.S, args.groupsize, args.num, args.exposure, args.fps, args.save_input, args.save_output, args.filter, args.fit, args.Dconfig, image_handler, save_every=args.save_every)
 
 imagestream.holder = holder
