@@ -13,8 +13,8 @@ cd opencv-3.4.0
 
 mkdir build; cd build
 
-cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=/usr/local
-
+cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=/usr/local 
+ 
 make -j8
 
 make install

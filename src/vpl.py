@@ -197,7 +197,7 @@ class Pipeline:
         
         self.chain_time = sum(chain_time), chain_time
         self.chain_fps = 1.0 / sum(chain_time), [1.0 / i if i != 0 else float('inf') for i in chain_time]
-        
+        print(self.chain_fps)
         return im, data
 
     def __getitem__(self, key, default=None):
@@ -262,7 +262,7 @@ class VPL:
 
     """
 
-    def do_async(self, method, args=()):
+    def do_async(self, method, args=( )):
         thread = threading.Thread(target=method, args=args)
         thread.start()
 

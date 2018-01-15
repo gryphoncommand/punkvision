@@ -48,6 +48,8 @@ cam_props = vpl.CameraProperties()
 cam_props["FRAME_WIDTH"] = args.size[0]
 cam_props["FRAME_HEIGHT"] = args.size[1]
 
+cam_props["FPS"] = 30
+
 pipe.add_vpl(vpl.VideoSource(id=args.cam, properties=cam_props))
 # to ensure the size
 pipe.add_vpl(vpl.Resize(w=args.size[0], h=args.size[1]))
