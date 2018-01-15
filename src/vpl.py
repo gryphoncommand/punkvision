@@ -218,7 +218,7 @@ class Pipeline:
         
         self.chain_time = sum(chain_time), chain_time
         self.chain_fps = 1.0 / sum(chain_time), [1.0 / i if i != 0 else float('inf') for i in chain_time]
-        print ("fps: " + self.chain_fps[0])
+        print ("fps: " + "%.1f" % self.chain_fps[0])
         return im, data
 
     def __getitem__(self, key, default=None):

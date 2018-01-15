@@ -72,8 +72,11 @@ pipe.add_vpl(vpl.FPSCounter())
 pipe.add_vpl(vpl.Display(title="footage from " + str(args.source)))
 
 
-while True:
-    # we let our VideoSource do the processing
-    pipe.process(image=None, data=None)
-    #print (pipe.chain_fps)
+try:
+    while True:
+        # we let our VideoSource do the processing
+        pipe.process(image=None, data=None)
+        #print (pipe.chain_fps)
+except KeyboardInterrupt:
+    exit(0)
 
