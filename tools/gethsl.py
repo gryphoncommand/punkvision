@@ -156,7 +156,7 @@ while do_l:
     k = cv2.waitKey(0)
 
     # right arrow
-    if k == 83:
+    if k == 102:
         count += 1
     #left arrow
     elif k == 81:
