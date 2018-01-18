@@ -50,6 +50,9 @@ class BlurType(Enum):
     MEDIAN = 3
 
 
+
+
+
 """
 
 definition of all opencv cap props
@@ -139,6 +142,35 @@ Think of it similar to how VSTs handle audio, this is a plugin for video
 """
 
 import cv2
+
+class PipelineData:
+    """
+
+
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        self._dict = dict(*args, **kwargs)
+    
+    def __getitem__(self, key):
+        if key in self._dict:
+            return self._dict[key]
+        else:
+            self._dict[key] = PipelineData()
+            return self._dict[key]
+    
+    def __setitem__(self, key, val):
+        self._dict[key] = val
+
+    def get(self, key, d=None):
+        return self._dict.get(key, d)
+
+    def __str__(self):
+        return self._dict.__str__()
+
+    def keys(self):
+        return self._dict.keys()
 
 class Pipeline:
 
@@ -240,7 +272,7 @@ class Pipeline:
 
 
         if data is None:
-            data = {}
+            data = PipelineData()
 
         self.is_quit = False
         if loop:
@@ -704,4 +736,60 @@ class MJPGServer(VPL):
         self.http_server.update_image(image.copy())
 
         return image, data
+
+
+class ConvertColor(VPL):
+    """
+
+    Usage: ConvertColor(conversion=None)
+
+      * conversion = type of conversion (see https://docs.opencv.org/3.1.0/d7/d1b/group__imgproc__misc.html#ga4e0972be5de079fed4e3a10e24ef5ef0) ex: cv2.COLOR_BGR2HSL
+
+    """
+
+    def process(self, pipe, image, data):
+        if self["conversion"] is None:
+            return image, data
+        else:
+            return cv2.cvtColor(image, self["conversion"]), data
+
+
+class ChannelSplit(VPL):
+    """
+
+    Usage: ChannelSplit(store=None)
+
+      * store : the key to store in the data object
+
+    """
+
+    def process(self, pipe, image, data):
+        height, width, depth = image.shape
+
+        for i in range(0, depth):
+            data[self["store"]][i] = image[:,:,i]
+        
+        return image, data
+
+class ChannelRecombo(VPL):
+    """
+
+    Usage: ChannelSplit(store=None)
+
+      * store : the key to store in the data object
+
+    """
+
+    def process(self, pipe, image, data):
+        height, width = data[self["store"]][0].shape
+        depth = len(data[self["store"]].keys())
+        image = np.zeros((height, width, depth), dtype=data[self["store"]][0].dtype)
+
+        for i in range(0, depth):
+            image[:,:,i] = data[self["store"]][i]
+        
+        return image, data
+
+
+
 

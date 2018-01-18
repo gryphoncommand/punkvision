@@ -29,6 +29,7 @@ This is a simple cam viewer showing how vpl works
 """
 
 import vpl
+import cv2
 import argparse
 
 parser = argparse.ArgumentParser(description='Example webcam view for punkvision')
@@ -71,6 +72,12 @@ if args.save is not None:
 # if we want to blur it
 if args.blur is not None:
     pipe.add_vpl(vpl.Blur(w=args.blur[0], h=args.blur[1], method=vpl.BlurType.BOX))
+
+
+pipe.add_vpl(vpl.ConvertColor(conversion=cv2.COLOR_BGR2HLS))
+
+#pipe.add_vpl(vpl.ChannelSplit(store="my_channels"))
+#pipe.add_vpl(vpl.ChannelRecombo(store="my_channels"))
 
 # add a FPS counter
 pipe.add_vpl(vpl.FPSCounter())
