@@ -143,34 +143,6 @@ Think of it similar to how VSTs handle audio, this is a plugin for video
 
 import cv2
 
-class PipelineData:
-    """
-
-
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        self._dict = dict(*args, **kwargs)
-    
-    def __getitem__(self, key):
-        if key in self._dict:
-            return self._dict[key]
-        else:
-            self._dict[key] = PipelineData()
-            return self._dict[key]
-    
-    def __setitem__(self, key, val):
-        self._dict[key] = val
-
-    def get(self, key, d=None):
-        return self._dict.get(key, d)
-
-    def __str__(self):
-        return self._dict.__str__()
-
-    def keys(self):
-        return self._dict.keys()
 
 class Pipeline:
 
@@ -272,7 +244,7 @@ class Pipeline:
 
 
         if data is None:
-            data = PipelineData()
+            data = dict()
 
         self.is_quit = False
         if loop:
