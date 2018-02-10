@@ -488,7 +488,7 @@ class VideoSaver(VPL):
 
     Usage: VideoSaver(path="data/{num}.png")
 
-      * "path" = image format
+      * "path" = image format, or video file (.mp4 or .avi)
 
 
     optional arguments:
@@ -500,10 +500,28 @@ class VideoSaver(VPL):
     """
 
     def save_image(self, image, num):
-        loc = pathlib.Path(self["path"].format(num="%08d" % num))
-        if not loc.parent.exists():
-            loc.parent.mkdir(parents=True)
-        cv2.imwrite(str(loc), image)
+        _, ext = os.path.splitext(self["path"])
+        if ext in (".mp4", ".avi", ".mov"):
+            if not hasattr(self, "video_out"):
+                h, w, d = image.shape
+                self.fourcc = cv2.VideoWriter_fourcc(*self.get("fourcc", "XVID"))
+                self.fps = self.get("fps", 24)
+                self.video_out = cv2.VideoWriter(self["path"], self.fourcc, self.fps, (w, h))
+
+                loc = pathlib.Path(self["path"])
+                if not loc.parent.exists():
+                    loc.parent.mkdir(parents=True)
+
+            if not hasattr(self, "last_time") or time.time() - self.last_time > 1.0 / self.fps:
+                self.video_out.write(image)
+                self.last_time = time.time()
+
+        else:
+            loc = pathlib.Path(self["path"].format(num="%08d" % num))
+            if not loc.parent.exists():
+                loc.parent.mkdir(parents=True)
+
+            cv2.imwrite(str(loc), image)
 
     def process(self, pipe, image, data):
         if not hasattr(self, "num"):
@@ -762,6 +780,110 @@ class ChannelRecombo(VPL):
         
         return image, data
 
+class CoolChannelOffset(VPL):
+
+    def process(self, pipe, image, data):
+        h, w, nch = image.shape
+        ch = cv2.split(image)
+        for i in range(nch):
+            xoff = 8 * i
+            yoff = 0
+            ch[i] = np.roll(np.roll(image[:,:,i], yoff, 0), xoff, 1)
+            #image[:,:,i] = np.roll(image[:,:,i], 10, 1)
+
+        image = cv2.merge(ch)
+
+        return image, data
+
+import math
+
+class Bleed(VPL):
+
+    def process(self, pipe, image, data):
+        N = self.get("N", 18)
+        if not hasattr(self, "buffer"):
+            self.buffer = []
+
+        self.buffer.insert(0, image.copy())
+
+        if len(self.buffer) >= N:
+            self.buffer = self.buffer[:N]
+
+        #a = [len(self.buffer) - i + N for i in range(0, len(self.buffer))]
+        a = [1.0 / (i + 1) for i in range(0, len(self.buffer))]
+
+        # normalize
+        a = [a[i] / sum(a) for i in range(len(a))]
+
+        image[:,:,:] = 0
+
+        for i in range(len(a)):
+            image = cv2.addWeighted(image, 1.0, self.buffer[i], a[i], 0)
+
+        return image, data
 
 
+class Pixelate(VPL):
+
+    def process(self, pipe, image, data):
+        N = self.get("N", 7.5)
+
+        h, w, d = image.shape
+
+        image = cv2.resize(image, (int(w // N), int(h // N)), interpolation=cv2.INTER_NEAREST)
+        image = cv2.resize(image, (w, h), interpolation=cv2.INTER_NEAREST)
+
+        return image, data
+
+class Noise(VPL):
+
+    def process(self, pipe, image, data):
+        level = self.get("level", .125)
+
+        m = (100,100,100) 
+        s = (100,100,100)
+        noise = np.zeros_like(image)
+
+        image = cv2.addWeighted(image, 1 - level, cv2.randn(noise, m, s), level, 0)
+
+        return image, data
+
+
+class DetailEnhance(VPL):
+
+    def process(self, pipe, image, data):
+        image = cv2.detailEnhance(image, sigma_s=self.get("r", 10), sigma_r=self.get("s", .15))
+        return image, data
+
+
+class Cartoon(VPL):
+
+    def process(self, pipe, image, data):
+        down = self.get("down", 2)
+        bilateral = self.get("bilateral", 7)
+
+        for i in range(down):
+            image = cv2.pyrDown(image)
+
+        for i in range(bilateral):
+            image = cv2.bilateralFilter(image, d=9,
+                                    sigmaColor=9,
+                                    sigmaSpace=7)
+
+        for i in range(down):
+            image = cv2.pyrUp(image)
+
+        image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        image_blur = cv2.medianBlur(image_gray, 7)
+
+        image_edge = cv2.adaptiveThreshold(image_blur, 255,
+                                 cv2.ADAPTIVE_THRESH_MEAN_C,
+                                 cv2.THRESH_BINARY,
+                                 blockSize=9,
+                                 C=2)
+
+        image_edge = cv2.cvtColor(image_edge, cv2.COLOR_GRAY2RGB)
+        image_cartoon = cv2.bitwise_and(image, image_edge)
+
+        return image_cartoon, data
 
