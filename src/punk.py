@@ -26,9 +26,9 @@ import os
 import time
 import argparse
 
+
 import vpl
 import frcvpl
-
 
 parser = argparse.ArgumentParser(description='PunkVision')
 

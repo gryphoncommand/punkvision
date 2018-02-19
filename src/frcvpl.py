@@ -29,7 +29,6 @@ import math
 import os
 import glob
 import pathlib
-import simpleaudio as sa
 
 from http.server import BaseHTTPRequestHandler,HTTPServer
 from socketserver import ThreadingMixIn
@@ -188,35 +187,6 @@ class KillSwitch(vpl.VPL):
         return image, data
     
 
-class Beep(vpl.VPL):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.props = kwargs
-        self.playstart = 0
-        self.wave_beep = sa.WaveObject.from_wave_file("media/beep.wav")
-        self.wave_lock = sa.WaveObject.from_wave_file("media/locked.wav")
-        self.beep_length = 3.47
-        self.lock_length = 1
-    def process(self, pipe, image, data):
-        contours = data[self["key"]]
-        if len(contours) != 0:
-            contours = data[self["key"]]
-            for center, radius in contours:
-                x = center[0]
-
-                if (x > ((np.size(image, 1)/2)-50) and x < ((np.size(image, 1)/2)+50)): 
-
-                    if self.playstart < time.time() - self.lock_length:
-                        play_obj = self.wave_lock.play()
-                        print('locked')
-                        self.playstart = time.time()
-                else:
-                    if self.playstart < time.time() - self.beep_length:
-                        play_obj = self.wave_beep.play()
-                        print('beep beep')
-                        self.playstart = time.time()
-
-        return image, data
 
 class DrawMeter(vpl.VPL):
     '''
