@@ -6,7 +6,9 @@ A realtime vision program for FRC teams.
 
 If you are on a macbook (school-issued in our case), run `./scripts/install_schoolmac.sh`.
 
-If you are on an Debian/Ubuntu distribution of linux, run `sudo ./scripts/install_ubuntu.sh`
+If you are on an Debian/Ubuntu distribution of linux, run `sudo ./scripts/install_opencv_debian.sh`
+
+And then, run `pip3 install -r requirements.txt`
 
 
 ## Installing
@@ -29,6 +31,9 @@ After this, run `./scripts/update_raspi.sh`. You will need to do this each time 
 
 Now, reboot, and it should run the autostart scripts on boot!
 
+## Raspi
+
+The address should be `raspberrypi-3966-FRC.local`
 
 
 ## TODO
