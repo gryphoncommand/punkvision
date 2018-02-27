@@ -53,36 +53,20 @@ parser.add_argument('--size', type=int, nargs=2, default=(320, 240), help='image
 parser.add_argument('--blur', type=int, nargs=2, default=(4, 4), help='image size')
 
 
-#parser.add_argument('--file', '--config', default="configs/nothing.conf", help='config file')
-
-#parser.add_argument('--num', type=int, default=1, help='how many groups to keep')
-#parser.add_argument('--groupsize', type=int, default=2, help='how many targets to find for a fit in one group')
-
-#parser.add_argument('-H', type=int, nargs=2, default=(0, 180), help='hue range')
-#parser.add_argument('-S', type=int, nargs=2, default=(0, 255), help='saturation range')
-#parser.add_argument('-L', type=int, nargs=2, default=(0, 255), help='luminance range')
-
-#parser.add_argument('--buffer', type=int, default=None, help='blur size')
-
-# replaced by -D blur:X,Y
-#parser.add_argument('--blur', type=int, nargs=2, default=(0, 0), help='blur size')
-
-#parser.add_argument('-e', '--exposure', type=float, default=None, help='exposure value')
-#parser.add_argument('--fps', type=float, default=None, help='frames per second from input')
-
-#parser.add_argument('--fit', type=str, nargs='+', default=(), help='fitness switches ( "myname:sum(abs(X-avg(X)))" )')
-#parser.add_argument('--filter', type=str, nargs='*', default=(), help='filter values ( "myname: x > 40" )')
-
-#parser.add_argument('-D', '--Dconfig', type=str, nargs='*', default=(), help='config values ( reticle:rgb(255,0,0) )')
-
 args = parser.parse_args()
-
-#execfile(args.file)
-#exec(open(args.file, "r").read())
 
 from vpl.all import *
 
 pipe = Pipeline("punkvision")
+
+# input
+
+pipe = Pipeline("pipe")
+fork = Pipeline("record")
+
+
+if args.printinfo:
+    pipe.add_vpl(PrintInfo(fps=4, extended=True))
 
 
 # input
@@ -90,40 +74,23 @@ vsrc = VideoSource(source=args.source, async=False)
 
 pipe.add_vpl(vsrc)
 
-if args.printinfo:
-    pipe.add_vpl(PrintInfo(fps=4, extended=True))
+pipe.add_vpl(ForkVPL(pipe=fork))
 
-cam_props = CameraProperties()
+fork.add_vpl(frcvpl.ShowGameInfo())
 
-cam_props["FPS"] = 60.0
 
-#if args.exposure is not None:
-#    cam_props["EXPOSURE"] = args.exposure
 
-#if args.auto_exposure is not None and not args.no_prop:
-#    cam_props["AUTO_EXPOSURE"] = args.auto_exposure
+# resize
 
-# set preferred width and height
-cam_props["FRAME_WIDTH"] = args.size[0]
-cam_props["FRAME_HEIGHT"] = args.size[1]
 
-vsrc["properties"] = cam_props
-
-# resize just in case
 pipe.add_vpl(Resize(w=args.size[0], h=args.size[1]))
-
-if args.save_input:
-    pipe.add_vpl(VideoSaver(path=args.save_input, every=args.every))
-
-# processing here
 
 
 #blur
-if args.blur is not None:
-    pipe.add_vpl(Blur(w=args.blur[0], h=args.blur[1], method='box'))
+pipe.add_vpl(Blur(w=args.blur[0], h=args.blur[1], method='box'))
 
 #convert to HSV
-pipe.add_vpl(ConvertColor(conversion=cv2.COLOR_BGR2HSV))
+pipe.add_vpl(frcvpl.ConvertColor(conversion=cv2.COLOR_BGR2HSV))
 
 #Filter HSV threshold
 pipe.add_vpl(frcvpl.InRange(mask_key="mask"))
@@ -135,7 +102,7 @@ pipe.add_vpl(frcvpl.RestoreImage(key="mask"))
 pipe.add_vpl(Erode())
 
 #Dilate
-pipe.add_vpl(Dilate())
+pipe.add_vpl(Dilate(iterations=4))
 
 #Find Contours
 pipe.add_vpl(frcvpl.FindContours(key="contours"))
@@ -147,6 +114,7 @@ pipe.add_vpl(frcvpl.RestoreImage(key="normal"))
 
 #Draws dot on center point of convex hull
 pipe.add_vpl(frcvpl.DrawContours(key="contours"))
+pipe.add_vpl(frcvpl.Distance(key="contours"))
 
 #Draws meter to tell how close to center
 pipe.add_vpl(frcvpl.DrawMeter(key="contours"))
@@ -157,20 +125,32 @@ pipe.add_vpl(FPSCounter())
 pipe.add_vpl(frcvpl.DumpInfo(key="contours"))
 
 
+cam_props = CameraProperties()
+
+cam_props["FPS"] = 60.0
+
+# set preferred width and height
+if args.size is not None:
+    cam_props["FRAME_WIDTH"] = args.size[0]
+    cam_props["FRAME_HEIGHT"] = args.size[1]
+
+vsrc["properties"] = cam_props
+
 
 # just output
 
-pipe.add_vpl(FPSCounter())
-
-
-if args.save_output:
-    pipe.add_vpl(VideoSaver(path=args.save_output, every=args.every))
-
 if args.stream is not None:
     pipe.add_vpl(MJPGServer(port=args.stream))
+    #fork.add_vpl(MJPGServer(port=args.stream))
+
 
 if args.show:
-    pipe.add_vpl(Display(title="punkvision pipe"))
+    pipe.add_vpl(Display(title="window"))
+    fork.add_vpl(Display(title="fork"))
+
+
+#if args.output is not None:
+#    pipe.add_vpl(VideoSaver(path=args.output, async=not args.sync))
 
 try:
     # we let our VideoSource do the processing, autolooping
@@ -181,4 +161,18 @@ except (KeyboardInterrupt, SystemExit):
 print ("gracefully ending")
 
 pipe.end()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -29,6 +29,7 @@ import math
 import os
 import glob
 import pathlib
+import simpleaudio as sa
 
 from http.server import BaseHTTPRequestHandler,HTTPServer
 from socketserver import ThreadingMixIn
@@ -58,6 +59,39 @@ Think of it similar to how VSTs handle audio, this is a plugin for video
 """
 
 import cv2
+
+
+class Display(vpl.VPL):
+    """
+
+    Usage: Display(title="mytitle")
+
+        * "title" = the window title
+
+    """
+
+    def process(self, pipe, image, data):
+
+        cv2.imshow(self["title"], image)
+        cv2.waitKey(1)
+
+        return image, data
+
+
+class ConvertColor(vpl.VPL):
+    """
+
+    Usage: ConvertColor(conversion=None)
+
+      * conversion = type of conversion (see https://docs.opencv.org/3.1.0/d7/d1b/group__imgproc__misc.html#ga4e0972be5de079fed4e3a10e24ef5ef0) ex: cv2.COLOR_BGR2HSL
+
+    """
+
+    def process(self, pipe, image, data):
+        if self["conversion"] is None:
+            return image, data
+        else:
+            return cv2.cvtColor(image, self["conversion"]), data
 
 
 
@@ -92,6 +126,27 @@ class ApplyMask(vpl.VPL):
         else:
             return image, data
 
+class Erode(vpl.VPL):
+    """
+
+    Usage: Erode(mask, None, iterations) 
+    
+    """
+    def process(self, pipe, image, data):
+        image = cv2.erode(image, None, iterations=2)
+        return image, data
+
+class Dilate(vpl.VPL):
+    """
+
+    Usage: Dilate(mask, None, iterations)
+
+    """
+    def process(self, pipe, image, data):
+        image = cv2.dilate(image, None, iterations=2)
+        return image, data
+
+
 class FindContours(vpl.VPL):
     """ 
 
@@ -104,6 +159,8 @@ class FindContours(vpl.VPL):
         cnts = cv2.findContours(image, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)[-2]
         center = None
 
+
+        height, width = image.shape
         data[self["key"]] = []
 
         # only proceed if at least one contour was found
@@ -114,12 +171,13 @@ class FindContours(vpl.VPL):
             c = max(cnts, key=cv2.contourArea)
             ct = 0
             #for c in filter(lambda x: cv2.contourArea(x) > 15, cnts):
-            ((x, y), radius) = cv2.minEnclosingCircle(c)
+            #((x, y), radius) = cv2.minEnclosingCircle(c)
+            area = cv2.contourArea(c)
             M = cv2.moments(c)
             center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
             # only proceed if the radius meets a minimum size
-            if (radius > 10):
-                data[self["key"]] += [[center, radius]]
+            if area > width * height * 0.007: #(radius > width/30):
+                data[self["key"]] += [[c, center, area]]
                 """
                 # draw the circle and centroid on the frame,
                 # then update the list of tracked points
@@ -136,8 +194,12 @@ class DrawContours(vpl.VPL):
 
     def process(self, pipe, image, data):
         contours = data[self["key"]]
-        for center, radius in contours:
-            cv2.circle(image, center, 5, (255, 0, 0), -1)
+        draw_conts = [c for c, _, __ in contours]
+        for i in range(0, len(draw_conts)):
+            cv2.drawContours(image, draw_conts, i, (255, 0, 0), 4)
+        #for c, center, radius in contours:
+        
+            #cv2.circle(image, center, 5, (255, 0, 0), -1)
         return image, data
 
 class StoreImage(vpl.VPL): 
@@ -171,11 +233,16 @@ class Distance(vpl.VPL):
     """
     def process(self, pipe, image, data):
         contours = data[self["key"]]
+        h, w, d = image.shape
         if len(contours) != 0:
             contours = data[self["key"]]
-            for center, radius in contours:
-               distance = 5150/radius if radius != 0 else 0
-               cv2.putText(image, str(distance), (100,100), cv2.FONT_HERSHEY_PLAIN, 2,  (0,255,255))
+            for cont, center, area in contours:
+                radius = int(math.sqrt(area / math.pi) + .5)
+                radius_prop = math.sqrt(area / (math.pi * w * h))
+                print (radius_prop)
+                distance = 5150/radius if radius != 0 else 0
+                new_center = (int(center[0] - radius / 3.0)), (center[1])
+                cv2.putText(image, "%.1f" % distance, new_center, cv2.FONT_HERSHEY_PLAIN, 2, (255,0,255))
 
         return image, data
 
@@ -186,6 +253,37 @@ class KillSwitch(vpl.VPL):
             pipe.quit()
         return image, data
     
+"""
+class Beep(vpl.VPL):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.props = kwargs
+        self.playstart = 0
+        self.wave_beep = sa.WaveObject.from_wave_file("media/beep.wav")
+        self.wave_lock = sa.WaveObject.from_wave_file("media/locked.wav")
+        self.beep_length = 3.47
+        self.lock_length = 1
+    def process(self, pipe, image, data):
+        contours = data[self["key"]]
+        if len(contours) != 0:
+            contours = data[self["key"]]
+            for cont, center, area in contours:
+                x = center[0]
+
+                if (x > ((np.size(image, 1)/2)-50) and x < ((np.size(image, 1)/2)+50)): 
+
+                    if self.playstart < time.time() - self.lock_length:
+                        play_obj = self.wave_lock.play()
+                        print('locked')
+                        self.playstart = time.time()
+                else:
+                    if self.playstart < time.time() - self.beep_length:
+                        play_obj = self.wave_beep.play()
+                        print('beep beep')
+                        self.playstart = time.time()
+
+        return image, data
+"""
 
 
 class DrawMeter(vpl.VPL):
@@ -203,7 +301,7 @@ class DrawMeter(vpl.VPL):
         range_upper = int((w/2)+50)
 
 
-        for center, radius in contours:
+        for cont, center, area in contours:
             x = center[0]
             if x > range_lower and x < range_upper:
                 bar_color = (34,139,34)
@@ -267,20 +365,26 @@ class DumpInfo(vpl.VPL):
 
     def write(self):
         if len(self.contours) != 0:
-            for center, radius in self.contours:
+            for cont, center, area in self.contours:
                 x,y = center
-                print(center, radius)
 
-                self.smartdashboard.putNumber("Radius", radius)
-                self.smartdashboard.putNumber("centerX", x)
-                self.smartdashboard.putNumber("centerY", y)
+                print(center, area)
+
+
+                self.smartdashboard.putNumber("area", area/(self.width * self.height))
+                self.smartdashboard.putNumber("center_x", x/self.width)
+                self.smartdashboard.putNumber("center_y", y/self.height)
         else:
-            self.smartdashboard.putNumber("Radius", -1)
-            self.smartdashboard.putNumber("centerX", -1)
-            self.smartdashboard.putNumber("centerY", -1)
+            self.smartdashboard.putNumber("area", -1)
+            self.smartdashboard.putNumber("center_x", -1)
+            self.smartdashboard.putNumber("center_y", -1)
 
 
     def process(self, pipe, image, data):
+        self.height, self.width, self.channels = image.shape
+        #height, width, channels= image.shape
+
+
         self.contours = data[self["key"]]
         if not hasattr(self, "is_init"):
             self.is_init = True
