@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # auto_nothing.sh
 
 # test autostarting script

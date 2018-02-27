@@ -65,10 +65,6 @@ pipe = Pipeline("pipe")
 fork = Pipeline("record")
 
 
-if args.printinfo:
-    pipe.add_vpl(PrintInfo(fps=4, extended=True))
-
-
 # input
 vsrc = VideoSource(source=args.source, async=False)
 
@@ -136,8 +132,12 @@ if args.size is not None:
 
 vsrc["properties"] = cam_props
 
-
 # just output
+
+
+if args.printinfo:
+    pipe.add_vpl(PrintInfo(fps=4, extended=True))
+
 
 if args.stream is not None:
     pipe.add_vpl(MJPGServer(port=args.stream))
