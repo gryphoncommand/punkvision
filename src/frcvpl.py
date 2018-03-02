@@ -29,7 +29,6 @@ import math
 import os
 import glob
 import pathlib
-import simpleaudio as sa
 
 from http.server import BaseHTTPRequestHandler,HTTPServer
 from socketserver import ThreadingMixIn
