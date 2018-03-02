@@ -9,7 +9,6 @@ LOG_FILE="/home/pi/punkvision.log"
 CAM_ID="0"
 
 
-
 export PYTHONPATH=$PYTHONPATH:$VPL_PATH
 
 # you normally keep this
@@ -28,23 +27,23 @@ wait_file() {
   return 1
 }
 
+
 wait_file "/dev/video$CAM_ID" 15 || {
     echo "failed to load camera file (/dev/video$CAM_ID) within 15 seconds" >> $LOG_FILE
     exit 0
 }
 
-sleep 1
-
 $VPL_PATH/utils/reset_lifecam.sh "/dev/video$CAM_ID"
 
-sleep 1
-
 # example of what to put
-/usr/bin/env python3 $PUNKVISION_PATH/src/punk.py --source $CAM_ID --size 320 240 --stream 5802 --printinfo 2>&1 >> $LOG_FILE &
+SERVER_CMD="python3 $PUNKVISION_PATH/src/punk.py --source $CAM_ID --size 320 240 --stream 5802 --printinfo"
 
-MY_PID=$!
+echo "master PID: $$" >> $LOG_FILE
 
-echo "PID is $MY_PID" >> $LOG_FILE
+until $SERVER_CMD &>> $LOG_FILE; do
+  echo "CRASHED" >> $LOG_FILE
+done
+
+echo "Ended gracefully" >> $LOG_FILE
 
 exit 0
-
