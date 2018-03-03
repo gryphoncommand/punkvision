@@ -30,6 +30,9 @@ import argparse
 import vpl
 import frcvpl
 
+from vpl.all import *
+
+
 parser = argparse.ArgumentParser(description='PunkVision')
 
 parser.add_argument('--source', '--input', default=0, help='source/input (/dev/videoX or "dir/*.png" or a video file)')
@@ -55,7 +58,6 @@ parser.add_argument('--blur', type=int, nargs=2, default=(4, 4), help='image siz
 
 args = parser.parse_args()
 
-from vpl.all import *
 
 pipe = Pipeline("punkvision")
 
@@ -95,10 +97,10 @@ pipe.add_vpl(frcvpl.ApplyMask(mask_key="mask"))
 #Erode
 pipe.add_vpl(frcvpl.StoreImage(key="normal"))
 pipe.add_vpl(frcvpl.RestoreImage(key="mask"))
-pipe.add_vpl(Erode())
+pipe.add_vpl(frcvpl.Erode())
 
 #Dilate
-pipe.add_vpl(Dilate(iterations=4))
+pipe.add_vpl(frcvpl.Dilate(iterations=4))
 
 #Find Contours
 pipe.add_vpl(frcvpl.FindContours(key="contours"))
@@ -113,7 +115,7 @@ pipe.add_vpl(frcvpl.DrawContours(key="contours"))
 pipe.add_vpl(frcvpl.Distance(key="contours"))
 
 #Draws meter to tell how close to center
-pipe.add_vpl(frcvpl.DrawMeter(key="contours"))
+#pipe.add_vpl(frcvpl.DrawMeter(key="contours"))
 
 # add a FPS counter
 pipe.add_vpl(FPSCounter())

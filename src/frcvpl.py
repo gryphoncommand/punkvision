@@ -395,3 +395,33 @@ class DumpInfo(vpl.VPL):
             self.write()
             self.last_time = time.time()
         return image, data
+
+class GetInfo(vpl.VPL):
+
+    def read(self):
+        h_min = self.smartdashboard.getNumber('H Min', 'N/A')
+        
+        h_max = self.smartdashboard.getNumber('H Max', 'N/A')
+
+        s_min = self.smartdashboard.getNumber('S Min', 'N/A')
+        s_max = self.smartdashboard.getNumber('S Max', 'N/A')
+
+        v_min = self.smartdashboard.getNumber('V Min', 'N/A')
+        v_max= self.smartdashboard.getNumber('V Max', 'N/A')
+        print(h_min, h_max)
+        print(self.smartdashboard.getNetworkMode())
+
+    def process(self, pipe, image, data):
+
+
+        self.contours = data[self["key"]]
+        if not hasattr(self, "is_init"):
+            self.is_init = True
+
+            NetworkTables.initialize(server='roborio-3966-FRC.local')
+            self.smartdashboard = NetworkTables.getTable('SmartDashboard')
+
+        if not hasattr(self, "last_time") or time.time() - self.last_time > 1.0 / 24.0:
+            self.read()
+            self.last_time = time.time()
+        return image, data
