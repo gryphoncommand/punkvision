@@ -39,7 +39,7 @@ parser.add_argument('--source', '--input', default=0, help='source/input (/dev/v
 
 parser.add_argument('--save-input', type=str, default=None, help='saves the raw input ("dir/{num}.png" or video file)')
 
-parser.add_argument('--save-output', type=str, default=None, help='saves the processed output ("dir/{num}.png" or video file)')
+parser.add_argument('--output', type=str, default=None, help='saves the processed output ("dir/{num}.png" or video file)')
 
 parser.add_argument('--save-every', type=int, default=1, help='save every X frames (useful for small disk sizes)')
 
@@ -64,7 +64,7 @@ pipe = Pipeline("punkvision")
 # input
 
 pipe = Pipeline("pipe")
-fork = Pipeline("record")
+#fork = Pipeline("record")
 
 
 # input
@@ -72,9 +72,12 @@ vsrc = VideoSource(source=args.source, async=False)
 
 pipe.add_vpl(vsrc)
 
-pipe.add_vpl(ForkVPL(pipe=fork))
+if args.save_input is not None:
+    pipe.add_vpl(VideoSaver(path=args.save_input))
 
-fork.add_vpl(frcvpl.ShowGameInfo())
+#pipe.add_vpl(ForkVPL(pipe=fork))
+
+#fork.add_vpl(frcvpl.ShowGameInfo())
 
 
 
@@ -118,7 +121,7 @@ pipe.add_vpl(frcvpl.Distance(key="contours"))
 #pipe.add_vpl(frcvpl.DrawMeter(key="contours"))
 
 # add a FPS counter
-pipe.add_vpl(FPSCounter())
+#pipe.add_vpl(FPSCounter())
 
 pipe.add_vpl(frcvpl.DumpInfo(key="contours"))
 
@@ -148,11 +151,11 @@ if args.stream is not None:
 
 if args.show:
     pipe.add_vpl(Display(title="window"))
-    fork.add_vpl(Display(title="fork"))
+    #fork.add_vpl(Display(title="fork"))
 
 
-#if args.output is not None:
-#    pipe.add_vpl(VideoSaver(path=args.output, async=not args.sync))
+if args.output is not None:
+    pipe.add_vpl(VideoSaver(path=args.output))
 
 try:
     # we let our VideoSource do the processing, autolooping
