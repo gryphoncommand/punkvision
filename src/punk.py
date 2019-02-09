@@ -101,7 +101,7 @@ pipe.add_vpl(frcvpl.Erode())
 pipe.add_vpl(frcvpl.Dilate(iterations=4))
 
 #Find Contours
-pipe.add_vpl(frcvpl.FindContours(key="contours"))
+pipe.add_vpl(frcvpl.FindMultipleContours(key="contours"))
 
 pipe.add_vpl(frcvpl.RestoreImage(key="normal"))
 

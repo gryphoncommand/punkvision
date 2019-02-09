@@ -188,6 +188,24 @@ class FindContours(vpl.VPL):
                 """
             ct += 1
         return image, data
+    
+class FindMultipleContours(vpl.VPL):
+    """ 
+
+    Usage: FindMultipleCountours(key="contours")
+
+    """
+    def process(self, pipe, image, data):
+        _, contours, _ = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)
+        print("Found : ", len(contours), " contours")
+        centres = []
+        for i in range(len(contours)):
+            if cv2.contourArea(contours[i]) < 100:
+            moments = cv2.moments(contours[i])
+            centres.append((int(moments['m10']/moments['m00']), int(moments['m01']/moments['m00'])))
+            cv2.circle(img, centres[-1], 3, (0, 0, 0), -1)
+        print(centres)
+        return image, data
 
 class DrawContours(vpl.VPL):
 
