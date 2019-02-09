@@ -101,9 +101,9 @@ class InRange(vpl.VPL):
 
     """
     def process(self, pipe, image, data):
-        H = self.get("H", (23, 37))
-        S = self.get("S", (79, 255))
-        V = self.get("V", (103, 255))
+        H = self.get("H", (65, 255))
+        S = self.get("S", (0, 255))
+        V = self.get("V", (100, 255))
         mask = cv2.inRange(image, (H[0],S[0],V[0]), (H[1],S[1],V[1]))
         mask_key = self.get("mask_key", None)
         if mask_key is not None:

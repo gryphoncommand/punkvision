@@ -52,7 +52,7 @@ parser.add_argument('--publish', type=str, default=None, help='connect to Networ
 
 parser.add_argument('--table', type=str, default=None, help='NetworkTables table name (vision/gearpeg)')
 
-parser.add_argument('--size', type=int, nargs=2, default=(320, 240), help='image size')
+parser.add_argument('--size', type=int, nargs=2, default=(160, 120), help='image size')
 parser.add_argument('--blur', type=int, nargs=2, default=(4, 4), help='image size')
 
 
@@ -111,17 +111,17 @@ pipe.add_vpl(frcvpl.FindContours(key="contours"))
 pipe.add_vpl(frcvpl.RestoreImage(key="normal"))
 
 #Convert back to BGR
-#pipe.add_vpl(frcvpl.ConvertColor(conversion=cv2.COLOR_HSV2BGR))
+pipe.add_vpl(frcvpl.ConvertColor(conversion=cv2.COLOR_HSV2BGR))
 
 #Draws dot on center point of convex hull
 pipe.add_vpl(frcvpl.DrawContours(key="contours"))
-pipe.add_vpl(frcvpl.Distance(key="contours"))
+#pipe.add_vpl(frcvpl.Distance(key="contours"))
 
 #Draws meter to tell how close to center
-#pipe.add_vpl(frcvpl.DrawMeter(key="contours"))
+# pipe.add_vpl(frcvpl.DrawMeter(key="contours"))
 
 # add a FPS counter
-#pipe.add_vpl(FPSCounter())
+pipe.add_vpl(FPSCounter())
 
 pipe.add_vpl(frcvpl.DumpInfo(key="contours"))
 
@@ -145,6 +145,7 @@ if args.printinfo:
 
 
 if args.stream is not None:
+    print("streaming on port ", args.stream)
     pipe.add_vpl(MJPGServer(port=args.stream))
     #fork.add_vpl(MJPGServer(port=args.stream))
 
