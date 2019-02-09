@@ -216,19 +216,21 @@ class DrawMultipleContours(vpl.VPL):
         draw_conts = [c for c, center, area in contours]
         for cont, center, area in contours:
             x,y = center
-            if cont == 0:
-                first_x = x
-                first_y = y
+            if len(contours) >= 2:
+                if cont == 0:
+                    first_x = x
+                    first_y = y
+                elif cont == 1:
+                    second_x = x
+                    second_y = y
+                else:
+                    print('3 or more cotours found')
 
-            elif cont == 1:
-                second_x = x
-                second_y = y
+                avg_x = int((first_x + second_x)/2)
+                avg_y = int((first_y + second_y)/2)
+                circle_center = avg_x, avg_y
             else:
-                print('3 or more cotours found')
-
-        avg_x = (first_x + second_x)/2
-        avg_y = (first_y + second_y)/2
-        circle_center = avg_x, avg_y
+                circle_center = 0,0
         cv2.circle(image, circle_center, 5, (255, 0, 0), -1)
         return image, data
 
