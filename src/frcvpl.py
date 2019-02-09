@@ -202,7 +202,7 @@ class FindMultipleContours(vpl.VPL):
         centres = []
         for i in range(len(contours)):
             area = cv2.contourArea(contours[i])
-            if area > 50:
+            if area > 20:
                 M = cv2.moments(contours[i])
                 center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
                 data[self["key"]] += [[i, center, area]]
@@ -231,7 +231,7 @@ class DrawMultipleContours(vpl.VPL):
             self.points_x[cont] = x
             self.points_y[cont] = y
             circle_center = (int(width/2), int(height/2))
-
+            print(len(draw_conts))
             if len(draw_conts) >= 2:
                 avg_x = (self.points_x[0] + self.points_x[1]) / 2
                 avg_y = (self.points_y[0] + self.points_y[1]) / 2
