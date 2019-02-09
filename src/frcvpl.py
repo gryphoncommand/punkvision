@@ -201,9 +201,9 @@ class FindMultipleContours(vpl.VPL):
         centres = []
         for i in range(len(contours)):
             if cv2.contourArea(contours[i]) < 100:
-            moments = cv2.moments(contours[i])
-            centres.append((int(moments['m10']/moments['m00']), int(moments['m01']/moments['m00'])))
-            cv2.circle(img, centres[-1], 3, (0, 0, 0), -1)
+                moments = cv2.moments(contours[i])
+                centres.append((int(moments['m10']/moments['m00']), int(moments['m01']/moments['m00'])))
+                cv2.circle(img, centres[-1], 3, (0, 0, 0), -1)
         print(centres)
         return image, data
 
