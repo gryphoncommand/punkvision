@@ -227,7 +227,7 @@ class DrawMultipleContours(vpl.VPL):
                 avg_x = (self.points_x[0] + self.points_x[1]) / 2
                 avg_y = (self.points_x[0] + self.points_x[1]) / 2
 
-                circle_center = (anv_x, ang_y)
+                circle_center = (avg_x, avg_y)
             else:
                 circle_center = (0, 0)
 
