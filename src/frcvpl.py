@@ -369,7 +369,7 @@ class DumpInfo(vpl.VPL):
             for cont, center, area in self.contours:
                 x,y = center
                 
-                #print(center, area)
+                print(center, area)
 
 
                 self.smartdashboard.putNumber("area", area/(self.width * self.height))
