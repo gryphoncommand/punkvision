@@ -175,7 +175,7 @@ class FindContours(vpl.VPL):
             M = cv2.moments(c)
             center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
             # only proceed if the radius meets a minimum size
-            if area > width * height * 0.007: #(radius > width/30):
+            if area > width * height * 0.003: #(radius > width/30):
                 data[self["key"]] += [[c, center, area]]
                 """
                 # draw the circle and centroid on the frame,
@@ -363,11 +363,12 @@ class ShowGameInfo(vpl.VPL):
 class DumpInfo(vpl.VPL):
 
     def write(self):
-        if len(self.contours) != 0:
+        if len(self.contours) >= 2:
+            print("1: ", self.contours[0], "2: ", self.contours[1])
             for cont, center, area in self.contours:
                 x,y = center
-
-                print(center, area)
+                
+                #print(center, area)
 
 
                 self.smartdashboard.putNumber("area", area/(self.width * self.height))
