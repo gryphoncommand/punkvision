@@ -216,10 +216,11 @@ class DrawMultipleContours(vpl.VPL):
         self.points_y = [1] * 10
         NetworkTables.initialize(server='roborio-3966-FRC.local')
         self.smartdashboard = NetworkTables.getTable('SmartDashboard')
-        self.height, self.width = image.shape
 
 
     def process(self, pipe, image, data):
+        self.height, self.width = image.shape
+
         contours = data[self["key"]]
 
         draw_conts = [c for c, center, area in contours]
