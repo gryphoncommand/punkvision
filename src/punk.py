@@ -1,6 +1,6 @@
 """
 
-Copyright 2017 LN STEMpunks
+Copyright 2074 LN STEMpunks
 
   This file is part of the punkvision project
 
@@ -141,7 +141,7 @@ if args.printinfo:
 
 if args.stream is not None:
     print("streaming on port ", args.stream)
-    pipe.add_vpl(MJPGServer(port=int(args.stream+1)))
+    pipe.add_vpl(MJPGServer(port=args.stream))
     #fork.add_vpl(MJPGServer(port=args.stream))
 
 
