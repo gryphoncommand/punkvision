@@ -103,7 +103,7 @@ pipe.add_vpl(frcvpl.Dilate(iterations=4))
 #Find Contours
 pipe.add_vpl(frcvpl.FindMultipleContours(key="contours"))
 
-pipe.add_vpl(frcvpl.RestoreImage(key="normal"))
+#pipe.add_vpl(frcvpl.RestoreImage(key="normal"))
 
 #Convert back to BGR
 pipe.add_vpl(frcvpl.ConvertColor(conversion=cv2.COLOR_HSV2BGR))
