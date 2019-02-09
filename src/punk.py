@@ -142,7 +142,7 @@ if args.printinfo:
 if args.stream is not None:
     print("streaming on port ", args.stream)
     pipe.add_vpl(MJPGServer(port=args.stream))
-    fork.add_vpl(MJPGServer(port=args.stream))
+    fork.add_vpl(MJPGServer(port=args.stream+1))
 
 
 if args.show:
