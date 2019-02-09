@@ -211,8 +211,8 @@ class FindMultipleContours(vpl.VPL):
 class DrawMultipleContours(vpl.VPL):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.points_x = [] * 2
-        self.points_y = [] * 2
+        self.points_x = [1] * 10
+        self.points_y = [1] * 10
 
     def process(self, pipe, image, data):
         contours = data[self["key"]]
