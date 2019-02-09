@@ -64,7 +64,7 @@ pipe = Pipeline("punkvision")
 # input
 
 pipe = Pipeline("pipe")
-fork = Pipeline("stream")
+#fork = Pipeline("stream")
 
 
 # input
@@ -75,7 +75,7 @@ pipe.add_vpl(vsrc)
 if args.save_input is not None:
     pipe.add_vpl(VideoSaver(path=args.save_input))
 
-pipe.add_vpl(ForkVPL(pipe=fork))
+#pipe.add_vpl(ForkVPL(pipe=fork))
 
 
 # resize
