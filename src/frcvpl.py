@@ -201,9 +201,9 @@ class FindMultipleContours(vpl.VPL):
         print("Found : ", len(contours), " contours")
         centres = []
         for i in range(len(contours)):
-            moments = cv2.moments(contours[i])
+            M = cv2.moments(contours[i])
             area = cv2.contourArea(contours[i])
-            center = (int(moments['m10']/moments['m00']), int(moments['m01']/moments['m00']))
+            center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
             data[self["key"]] += [[i, center, area]]
 
         return image, data
