@@ -445,7 +445,7 @@ class DumpInfo(vpl.VPL):
 
             NetworkTables.initialize(server='roborio-3966-FRC.local')
             self.smartdashboard = NetworkTables.getTable('SmartDashboard')
-                            self.smartdashboard.putNumber("center_y", y/self.height)
+            self.smartdashboard.putNumber("center_y", y/self.height)
 
 
         if not hasattr(self, "last_time") or time.time() - self.last_time > 1.0 / 24.0:
