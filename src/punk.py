@@ -109,7 +109,7 @@ pipe.add_vpl(frcvpl.RestoreImage(key="normal"))
 pipe.add_vpl(frcvpl.ConvertColor(conversion=cv2.COLOR_HSV2BGR))
 
 #Draws dot on center point of convex hull
-#pipe.add_vpl(frcvpl.DrawContours(key="contours"))
+pipe.add_vpl(frcvpl.DrawMultipleContours(key="contours"))
 #pipe.add_vpl(frcvpl.Distance(key="contours"))
 
 #Draws meter to tell how close to center

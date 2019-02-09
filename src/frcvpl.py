@@ -196,15 +196,40 @@ class FindMultipleContours(vpl.VPL):
 
     """
     def process(self, pipe, image, data):
+        data[self["key"]] = []
         _, contours, _ = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)
         print("Found : ", len(contours), " contours")
         centres = []
         for i in range(len(contours)):
             moments = cv2.moments(contours[i])
-            centres.append((int(moments['m10']/moments['m00']), int(moments['m01']/moments['m00'])))
-            cv2.circle(image, centres[-1], 3, (0, 0, 0), -1)
-            print("contour number: ", i, " area: ", cv2.contourArea(contours[i]))
-        print("centres: ", centres)
+            area = cv2.contourArea(contours[i]))
+            center = (int(moments['m10']/moments['m00']), int(moments['m01']/moments['m00']))
+            data[self["key"]] += [[i, center, area]]
+
+        return image, data
+
+class DrawMultipleContours(vpl.VPL):
+
+    def process(self, pipe, image, data):
+        contours = data[self["key"]]
+
+        draw_conts = [c for c, center, area in contours]
+        for cont, center, area in contours:
+            x,y = center
+            if cont == 0:
+                first_x = x
+                first_y = y
+
+            elif cont == 1:
+                second_x = x
+                second_y = y
+            else:
+                print('3 or more cotours found')
+
+        avg_x = (first_x + second_x)/2
+        avg_y = (first_y + second_y)/2
+        circle_center = avg_x, avg_y
+        cv2.circle(image, circle_center, 5, (255, 0, 0), -1)
         return image, data
 
 class DrawContours(vpl.VPL):
