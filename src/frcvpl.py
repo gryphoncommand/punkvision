@@ -219,7 +219,7 @@ class DrawMultipleContours(vpl.VPL):
 
 
     def process(self, pipe, image, data):
-        self.height, self.width = image.shape
+        height, width = image.shape
 
         contours = data[self["key"]]
 
@@ -236,7 +236,7 @@ class DrawMultipleContours(vpl.VPL):
                 circle_center = (int(avg_x), int(avg_y))
             else:
                 circle_center = (0, 0)
-        target = avg_x / self.width
+        target = avg_x / width
         self.smartdashboard.putNumber("target_x", target)
         cv2.circle(image, circle_center, 5, (255, 0, 0), -1)
         return image, data
