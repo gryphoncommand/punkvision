@@ -214,6 +214,10 @@ class DrawMultipleContours(vpl.VPL):
         super().__init__(**kwargs)
         self.points_x = [1] * 10
         self.points_y = [1] * 10
+        NetworkTables.initialize(server='roborio-3966-FRC.local')
+        self.smartdashboard = NetworkTables.getTable('SmartDashboard')
+        self.height, self.width = image.shape
+
 
     def process(self, pipe, image, data):
         contours = data[self["key"]]
@@ -231,8 +235,8 @@ class DrawMultipleContours(vpl.VPL):
                 circle_center = (int(avg_x), int(avg_y))
             else:
                 circle_center = (0, 0)
-
-
+        target = avg_x / self.width
+        self.smartdashboard.putNumber("target_x", target))
         cv2.circle(image, circle_center, 5, (255, 0, 0), -1)
         return image, data
 
@@ -441,6 +445,8 @@ class DumpInfo(vpl.VPL):
 
             NetworkTables.initialize(server='roborio-3966-FRC.local')
             self.smartdashboard = NetworkTables.getTable('SmartDashboard')
+                            self.smartdashboard.putNumber("center_y", y/self.height)
+
 
         if not hasattr(self, "last_time") or time.time() - self.last_time > 1.0 / 24.0:
             self.write()
