@@ -209,6 +209,10 @@ class FindMultipleContours(vpl.VPL):
         return image, data
 
 class DrawMultipleContours(vpl.VPL):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+            self.points_x = [] * 2
+            self.points_y = [] * 2
 
     def process(self, pipe, image, data):
         contours = data[self["key"]]
@@ -216,21 +220,18 @@ class DrawMultipleContours(vpl.VPL):
         draw_conts = [c for c, center, area in contours]
         for cont, center, area in contours:
             x,y = center
-            if len(contours) >= 2:
-                if cont == 0:
-                    first_x = x
-                    first_y = y
-                elif cont == 1:
-                    second_x = x
-                    second_y = y
-                else:
-                    print('3 or more cotours found')
+            self.points_x[cont] = x
+            self.points_y[cont] = y
+            
+            if len(draw_conts) >= 2:
+                avg_x = (self.points_x[0] + self.points_x[1]) / 2
+                avg_y = (self.points_x[0] + self.points_x[1]) / 2
 
-                avg_x = int((first_x + second_x)/2)
-                avg_y = int((first_y + second_y)/2)
-                circle_center = avg_x, avg_y
+                circle_center = (anv_x, ang_y)
             else:
-                circle_center = 0,0
+                circle_center = (0, 0)
+
+
         cv2.circle(image, circle_center, 5, (255, 0, 0), -1)
         return image, data
 
