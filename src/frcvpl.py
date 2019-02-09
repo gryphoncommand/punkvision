@@ -363,6 +363,7 @@ class ShowGameInfo(vpl.VPL):
 class DumpInfo(vpl.VPL):
 
     def write(self):
+        print(len(self.contours))
         if len(self.contours) >= 2:
             print("1: ", self.contours[0], "2: ", self.contours[1])
             for cont, center, area in self.contours:
