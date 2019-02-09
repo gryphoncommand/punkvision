@@ -64,7 +64,7 @@ pipe = Pipeline("punkvision")
 # input
 
 pipe = Pipeline("pipe")
-#fork = Pipeline("record")
+fork = Pipeline("stream")
 
 
 # input
@@ -75,15 +75,10 @@ pipe.add_vpl(vsrc)
 if args.save_input is not None:
     pipe.add_vpl(VideoSaver(path=args.save_input))
 
-#pipe.add_vpl(ForkVPL(pipe=fork))
-
-#fork.add_vpl(frcvpl.ShowGameInfo())
-
+pipe.add_vpl(ForkVPL(pipe=fork))
 
 
 # resize
-
-
 pipe.add_vpl(Resize(w=args.size[0], h=args.size[1]))
 
 
@@ -147,12 +142,12 @@ if args.printinfo:
 if args.stream is not None:
     print("streaming on port ", args.stream)
     pipe.add_vpl(MJPGServer(port=args.stream))
-    #fork.add_vpl(MJPGServer(port=args.stream))
+    fork.add_vpl(MJPGServer(port=args.stream))
 
 
 if args.show:
     pipe.add_vpl(Display(title="window"))
-    #fork.add_vpl(Display(title="fork"))
+    fork.add_vpl(Display(title="fork"))
 
 
 if args.output is not None:
