@@ -219,7 +219,7 @@ class DrawMultipleContours(vpl.VPL):
 
 
     def process(self, pipe, image, data):
-        height, width = image.shape
+        height, width, channels = image.shape
 
         contours = data[self["key"]]
 
