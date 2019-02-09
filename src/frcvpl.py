@@ -235,7 +235,7 @@ class DrawMultipleContours(vpl.VPL):
 
                 circle_center = (int(avg_x), int(avg_y))
             else:
-                circle_center = (int(width/2), int(height/2)))
+                circle_center = (int(width/2), int(height/2))
                 avg_x, avg_y = .5,.5
         target = avg_x / width
         self.smartdashboard.putNumber("target_x", target)
