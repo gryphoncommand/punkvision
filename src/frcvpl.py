@@ -193,7 +193,7 @@ class DrawContours(vpl.VPL):
 
     def process(self, pipe, image, data):
         contours = data[self["key"]]
-        print(len(self.contours))
+        print(len(contours))
 
         draw_conts = [c for c, _, __ in contours]
         for i in range(0, len(draw_conts)):
