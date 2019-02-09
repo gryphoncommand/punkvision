@@ -118,7 +118,7 @@ pipe.add_vpl(frcvpl.ConvertColor(conversion=cv2.COLOR_HSV2BGR))
 # add a FPS counter
 pipe.add_vpl(FPSCounter())
 
-pipe.add_vpl(frcvpl.DumpInfo(key="contours"))
+#pipe.add_vpl(frcvpl.DumpInfo(key="contours"))
 
 
 cam_props = CameraProperties()
