@@ -226,6 +226,7 @@ class DrawMultipleContours(vpl.VPL):
         draw_conts = [c for c, center, area in contours]
         circle_default = (int(width/2), int(height/2))
         circle_center = circle_default
+        target = .5
         avg_x, avg_y = .5,.5
         for cont, center, area in contours:
             x,y = center
