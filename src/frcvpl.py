@@ -237,19 +237,15 @@ class DrawMultipleContours(vpl.VPL):
 
                 circle_center = (int(avg_x), int(avg_y))
                 target = avg_x / width
-
             elif len(draw_conts) == 1:
                 circle_center = (self.points_x[0], self.points_y[0])
                 avg_x = self.points_x[0]
                 avg_y = self.points_y[1]
                 target = avg_x / width
-
             else:
                 circle_center = circle_default
                 avg_x, avg_y = .5,.5
                 target = avg_x
-            print('test')
-            print(target)   
         self.smartdashboard.putNumber("target_x", target)
         cv2.circle(image, circle_center, 5, (255, 0, 0), -1)
         return image, data
