@@ -202,7 +202,7 @@ class FindMultipleContours(vpl.VPL):
         centres = []
         for i in range(len(contours)):
             area = cv2.contourArea(contours[i])
-            if area > 20:
+            if area > 5:
                 M = cv2.moments(contours[i])
                 center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
                 data[self["key"]] += [[i, center, area]]
@@ -224,8 +224,9 @@ class DrawMultipleContours(vpl.VPL):
         contours = data[self["key"]]
 
         draw_conts = [c for c, center, area in contours]
-        avg_x = 0
-        avg_y = 0
+        circle_default = (int(width/2), int(height/2))
+        circle_center = circle_default
+        avg_x, avg_y = .5,.5
         for cont, center, area in contours:
             x,y = center
             self.points_x[cont] = x
@@ -237,11 +238,11 @@ class DrawMultipleContours(vpl.VPL):
                 avg_y = (self.points_y[0] + self.points_y[1]) / 2
 
                 circle_center = (int(avg_x), int(avg_y))
-            if len(draw_conts) == 1:
+            elif len(draw_conts) == 1:
                 print('1 contour case')
                 circle_center = (self.points_x[0], self.points_y[0])
             else:
-                circle_center = (int(width/2), int(height/2))
+                circle_center = circle_default
                 avg_x, avg_y = .5,.5
         target = avg_x / width
         self.smartdashboard.putNumber("target_x", target)
