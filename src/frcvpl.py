@@ -231,8 +231,6 @@ class DrawMultipleContours(vpl.VPL):
             x,y = center
             self.points_x[cont] = x
             self.points_y[cont] = y
-            circle_center = (int(width/2), int(height/2))
-            print(len(draw_conts))
             if len(draw_conts) >= 2:
                 avg_x = (self.points_x[0] + self.points_x[1]) / 2
                 avg_y = (self.points_y[0] + self.points_y[1]) / 2
