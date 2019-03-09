@@ -197,7 +197,7 @@ class FindMultipleContours(vpl.VPL):
     """
     def process(self, pipe, image, data):
         data[self["key"]] = []
-        _, contours, _ = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)
+        contours = cv2.findContours(image, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)[-2]
         print("Found : ", len(contours), " contours")
         centres = []
         for i in range(len(contours)):
@@ -210,6 +210,52 @@ class FindMultipleContours(vpl.VPL):
         return image, data
 
 class DrawMultipleContours(vpl.VPL):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.points_x = [1] * 10
+        self.points_y = [1] * 10
+        NetworkTables.initialize(server='roborio-3966-FRC.local')
+        self.smartdashboard = NetworkTables.getTable('SmartDashboard')
+
+
+    def process(self, pipe, image, data):
+        height, width, channels = image.shape
+
+        contours = data[self["key"]]
+
+        draw_conts = [c for c, center, area in contours]
+        circle_default = (int(width/2), int(height/2))
+        circle_center = circle_default
+        target = .5
+        avg_x, avg_y = .5,.5
+        for cont, center, area in contours:
+            x,y = center
+            self.points_x[cont] = x
+            self.points_y[cont] = y
+            if len(draw_conts) >= 2:
+                avg_x = (self.points_x[0] + self.points_x[1]) / 2
+                avg_y = (self.points_y[0] + self.points_y[1]) / 2
+
+                circle_center = (int(avg_x), int(avg_y))
+                target = avg_x / width
+            elif len(draw_conts) == 1:
+                circle_center = (self.points_x[0], self.points_y[0])
+                avg_x = self.points_x[0]
+                avg_y = self.points_y[1]
+                target = avg_x / width
+            elif len(draw_conts) == 0:
+                circle_center = circle_default
+                avg_x, avg_y = .5,.5
+                target = avg_x
+            else:
+                circle_center = circle_default
+                avg_x, avg_y = .5,.5
+                target = avg_x
+        self.smartdashboard.putNumber("target_x", target)
+        cv2.circle(image, circle_center, 5, (255, 0, 0), -1)
+        return image, data
+
+class DrawBall(vpl.VPL):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.points_x = [1] * 10

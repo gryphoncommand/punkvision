@@ -61,14 +61,9 @@ args = parser.parse_args()
 
 pipe = Pipeline("punkvision")
 
-# input
-
-pipe = Pipeline("pipe")
-#fork = Pipeline("stream")
-
 
 # input
-vsrc = VideoSource(source=args.source, async=False)
+vsrc = VideoSource(source=args.source, asynchronous=False)
 
 pipe.add_vpl(vsrc)
 
@@ -101,7 +96,7 @@ pipe.add_vpl(frcvpl.Erode())
 pipe.add_vpl(frcvpl.Dilate(iterations=4))
 
 #Find Contours
-pipe.add_vpl(frcvpl.FindMultipleContours(key="contours"))
+pipe.add_vpl(frcvpl.FindContours(key="contours"))
 
 pipe.add_vpl(frcvpl.RestoreImage(key="normal"))
 
